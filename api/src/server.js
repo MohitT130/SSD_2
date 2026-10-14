@@ -1,0 +1,21 @@
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import analytics from './routes/analytics.js';
+import map from './routes/map.js';
+import reviews from './routes/reviews.js';
+import { closeConnections } from './db.js';
+const app = express();
+app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
+app.use(express.json());
+app.get('/api/health', (_req,res)=>res.json({ status:'ok', mode:process.env.DEMO_MODE==='true'?'demo':'database' }));
+app.use('/api/analytics', analytics);
+app.use('/api/map', map);
+app.use('/api/reviews', reviews);
+app.use((err,_req,res,_next)=>{
+  console.error(err);
+  res.status(500).json({ error:'The request failed. Check the API terminal and database configuration.', detail:process.env.NODE_ENV==='development'?err.message:undefined });
+});
+const port = Number(process.env.PORT || 4000);
+const server = app.listen(port, ()=>console.log(`BiteStream API listening on http://localhost:${port}`));
+process.on('SIGINT', async ()=>{ server.close(); await closeConnections(); process.exit(0); });
