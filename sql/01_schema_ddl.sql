@@ -1,7 +1,7 @@
-DROP TABLE IF EXISTS wallet_audit_logs;
-DROP TABLE IF EXISTS orders;
-DROP TABLE IF EXISTS restaurants;
-DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS wallet_audit_logs CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS restaurants CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
 -- Table 1 is USERS (containing Customers and Wallet balances)
 

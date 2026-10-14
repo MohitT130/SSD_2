@@ -35,23 +35,24 @@ We followed the original README exactly: SQL `01`–`05` → `postgres_seeder.py
 
 ## What we changed and why
 
-All fixes are additive (new files, original files untouched unless noted) and listed in the README change log.
+Every change is marked `[Team 26]` in the code and listed in the README change log. "Verified" means it is covered by `api/test/transaction.test.js` or was re-checked against the database.
 
-| Fix | File | Addresses |
-|---|---|---|
-| Remove the misplaced `SET TRANSACTION`; the `FOR UPDATE` row lock already serialises concurrent checkouts on a wallet | `sql/04_stored_procedures.sql` | #1 |
-| Reject `p_total_amount <= 0` | `sql/04_stored_procedures.sql` | #2 |
-| Map SQLSTATE `23505` / `P0001` / `23503` to friendly API errors | `api/` | #3 |
-| Move restaurant coordinates into the driver-ping area | `sql/07_fixes.sql` + seeder | #4 |
-| Seed `Menus`/`Reviews` with PostgreSQL restaurant UUIDs | `data_generation/mongo_seeder.py` | #5 |
-| Ping simulator (fresh pings every few seconds) | `api/` + `data_generation/` | #6 |
-| `$geoNear` → group by `driver_id` → sort by distance → limit 20 | `mongo/02_workflow3_geonear.js` + API | #7 |
-| `sp_advance_order_status(order_id)` + "only active if newest" seeding | `sql/07_fixes.sql`, seeder | #8, #11 |
-| Generate audit logs as a consistent chain per user | `data_generation/postgres_seeder.py` | #9 |
-| Refresh MV after seeding; add `refreshed_at` column | `sql/05_materialized_views.sql` | #10 |
-| Wrap Workflow 2 as `fn_restaurant_moving_average(uuid)` + ranking view | `sql/06_window_analytics.sql` | #12 |
-| `CREATE INDEX … wallet_audit_logs(user_id, timestamp DESC)` | `sql/07_fixes.sql` | #13 |
-| `IF NOT EXISTS` / `DROP … CASCADE` guards; seeder truncates first | `sql/*`, seeder | #14 |
+| Fix | File | Addresses | Status |
+|---|---|---|---|
+| Remove the misplaced `SET TRANSACTION`; the `SELECT … FOR UPDATE` row lock already serialises concurrent checkouts on one wallet | `sql/04_stored_procedures.sql` | #1 | ✅ Done, verified |
+| Reject `p_total_amount <= 0` inside the procedure (SQLSTATE 22023) and in the API | `sql/04_stored_procedures.sql`, `api/src/routes/checkout.js` | #2 | ✅ Done, verified |
+| Map SQLSTATE `P0001` / `23505` / `23503` / `P0002` / `55000` to friendly API errors | `api/src/errors.js` | #3 | ✅ Done, verified |
+| Restaurants seeded inside the driver-ping area (lat 17.36–17.46, lng 78.33–78.43) | `data_generation/postgres_seeder.py` | #4 | ✅ Done (PostgreSQL side) |
+| Seed `Menus`/`Reviews` with PostgreSQL restaurant UUIDs | `data_generation/mongo_seeder.py` | #5 | ⏳ Pending (Sai) |
+| Ping simulator so the map is not emptied by the 2-hour TTL | `data_generation/` or `api/` | #6 | ⏳ Pending (Sai) |
+| `$geoNear` → one row per driver → sort by distance | `mongo/02_workflow3_geonear.js` + `api/src/routes/map.js` | #7 | ⏳ Pending (Sai) |
+| New `sp_advance_order_status(order_id)`; seeder keeps only the newest order of ~20% of users active (2,069 of 10,000) | `sql/07_fixes_transactions.sql`, seeder | #8, #11 | ✅ Done, verified |
+| Audit logs generated as a consistent chain per user (orders become DEBITs, plus top-up CREDITs); wallet = end of chain | `data_generation/postgres_seeder.py` | #9 | ✅ Done: 10,000/10,000 wallets match, 0 chain breaks |
+| Materialized view refreshed at the end of seeding | `data_generation/postgres_seeder.py` | #10 (empty MV) | ✅ Done |
+| "Last refreshed" timestamp stored in the database | `sql/05_materialized_views.sql` | #10 (timestamp) | ⏳ Pending (Sai) |
+| Per-restaurant 7-day moving-average series | `sql/06_window_analytics.sql` + `api/src/routes/analytics.js` | #12 | ⏳ Pending (Sai) |
+| `idx_wallet_audit_user_ts` on `wallet_audit_logs(user_id, timestamp DESC)` and `idx_orders_status_created_at` | `sql/07_fixes_transactions.sql` | #13 | ✅ Done: audit query now uses an index scan |
+| `DROP TABLE … CASCADE`, `CREATE INDEX IF NOT EXISTS`, `DROP TRIGGER IF EXISTS`; seeder `TRUNCATE`s first | `sql/01`–`03`, seeder | #14 | ✅ Done: all scripts re-run cleanly |
 
 ## Suggestions for the original authors
 

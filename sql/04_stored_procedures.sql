@@ -13,8 +13,18 @@ DECLARE
     rollback_required BOOLEAN := FALSE;
     constraint_name TEXT;
 BEGIN
-    -- Use REPEATABLE READ for the checkout transaction
-    SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+    -- [Team 26 fix] The original issued
+    --     SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+    -- here, but CALL has already taken a snapshot by this point, so every
+    -- call failed with SQLSTATE 25001 ("must be called before any query").
+    -- The SELECT ... FOR UPDATE row lock below already serialises
+    -- concurrent checkouts on the same wallet, so READ COMMITTED is safe.
+
+    -- [Team 26 fix] Without this guard a negative amount credited the wallet.
+    IF p_total_amount IS NULL OR p_total_amount <= 0 THEN
+        RAISE EXCEPTION 'Amount must be greater than zero'
+            USING ERRCODE = 'invalid_parameter_value';
+    END IF;
 
     BEGIN
         -- Lock the user row so concurrent checkouts cannot modify
@@ -25,7 +35,8 @@ BEGIN
         FOR UPDATE;
 
         IF NOT FOUND THEN
-            RAISE EXCEPTION 'User does not exist';
+            RAISE EXCEPTION 'User does not exist'
+                USING ERRCODE = 'no_data_found';
         END IF;
 
         -- The chk_wallet_balance constraint will reject
