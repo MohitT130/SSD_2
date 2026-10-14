@@ -1,107 +1,113 @@
-# BiteStream API — Endpoint Sketch
+# BiteStream API — Endpoints
 
-Base URL: `http://localhost:4000/api` · JSON in / JSON out · no auth (actor is chosen in the UI and sent as a parameter).
+Base URL: `http://localhost:4000/api` · JSON in / JSON out · no authentication (the web app's "Acting as" picker chooses the customer and sends their id).
 
-The API layer is intentionally thin: every workflow is delegated to the database object listed in the **DB object** column.
+The API is intentionally thin: each workflow is delegated to the database object in the **DB object** column. Code: `api/src/routes/`.
 
 ## Conventions
 
-- **Pagination:** `?page=1&pageSize=20` (max `pageSize` 100). List responses:
+- **Lists are paginated on the server.** `?page=1&pageSize=20` (`pageSize` max 100). The browser never receives more than one page.
   ```json
-  { "items": [ ... ], "page": 1, "pageSize": 20, "total": 50000 }
+  { "data": [ ... ], "page": 1, "pageSize": 20, "total": 50000 }
   ```
-- **Errors:** non-2xx responses always have the shape
+- **Single records:** `{ "data": { ... } }`.
+- **Errors:** non-2xx responses have a human-readable `error` and a machine-readable `code`; some add context fields.
   ```json
-  { "error": { "code": "INSUFFICIENT_BALANCE", "message": "Human-readable explanation" } }
+  { "error": "The wallet has ₹120.00 but this order costs ₹450.00. Nothing was charged.",
+    "code": "INSUFFICIENT_BALANCE", "balanceBefore": "120.00", "balanceAfter": "120.00", "amount": "450.00" }
   ```
-- IDs are PostgreSQL UUIDs (strings). Money values are strings with 2 decimals (from `DECIMAL`), e.g. `"1250.00"`.
+- IDs are PostgreSQL UUIDs. Money values are strings with 2 decimals (PostgreSQL `DECIMAL`), e.g. `"1250.00"`.
+
+| `code` | HTTP | Meaning |
+|---|---|---|
+| `INVALID_ID`, `INVALID_AMOUNT`, `INVALID_STATUS`, `INVALID_DATE`, `INVALID_DATE_RANGE` | 400 | Bad input |
+| `USER_NOT_FOUND`, `RESTAURANT_NOT_FOUND`, `ORDER_NOT_FOUND` | 404 | Unknown id |
+| `ACTIVE_ORDER_EXISTS`, `ORDER_ALREADY_DELIVERED` | 409 | Conflicts with current state |
+| `INSUFFICIENT_BALANCE` | 422 | Wallet cannot cover the order |
+| `INTERNAL_ERROR` | 500 | Unexpected error (details in the API log) |
 
 ---
 
 ## 1. Browse
 
-| Method & path | Query / body | Returns | DB object |
+| Method & path | Query | Returns | DB object |
 |---|---|---|---|
-| `GET /users` | `search` (name, ILIKE), `hasActiveOrder` (`true`/`false`), `page`, `pageSize` | paged `{ id, name, wallet_balance, has_active_order }` | `users` + `EXISTS` on `orders` (uses `idx_active_user_order`) |
-| `GET /users/:id` | – | `{ id, name, wallet_balance, active_order: {…} \| null, recent_orders: [ … ] }` | `users`, `orders` |
+| `GET /users` | `search` (name, case-insensitive), `hasActiveOrder` (`true`/`false`), `page`, `pageSize` | paged `{ id, name, wallet_balance, has_active_order }`, sorted by name | `users` + `EXISTS` on `orders` |
+| `GET /users/:id` | – | `{ id, name, wallet_balance, has_active_order, active_order \| null, recent_orders[5] }` | `users`, `orders`, `restaurants` |
 | `GET /restaurants` | `search`, `page`, `pageSize` | paged `{ id, name, latitude, longitude }` | `restaurants` |
-| `GET /restaurants/:id` | – | `{ id, name, latitude, longitude, completed_revenue, completed_order_count }` | `restaurants` + `restaurant_completed_revenue` |
-| `GET /orders` | `userId`, `restaurantId`, `status` (`PREPARING`/`DELIVERING`/`DELIVERED`), `page`, `pageSize` | paged `{ id, user_id, user_name, restaurant_id, restaurant_name, total_amount, status, created_at }`, newest first | `orders` (indexes on `user_id`, `restaurant_id`, `created_at`) |
-| `GET /orders/:id` | – | single order with user + restaurant names | `orders` |
+| `GET /restaurants/:id` | – | `{ id, name, latitude, longitude, completed_revenue, completed_order_count, active_orders }` | `restaurants` + materialized view `restaurant_completed_revenue` |
+| `GET /orders` | `userId`, `restaurantId`, `status` (`PREPARING`/`DELIVERING`/`DELIVERED`), `page`, `pageSize` | paged `{ id, user_id, user_name, restaurant_id, restaurant_name, total_amount, status, created_at }`, newest first | `orders` (indexes on `user_id`, `restaurant_id`, `created_at`, `(status, created_at)`) |
+| `GET /orders/:id` | – | one order with customer and restaurant names | `orders` |
 
 ## 2. Transaction — Workflow 1 (place order)
 
 ### `POST /checkout`
 
-Body:
 ```json
 { "userId": "uuid", "restaurantId": "uuid", "amount": 450.00 }
 ```
 
-The API reads the balance, runs `CALL sp_execute_checkout($1,$2,$3)` as a **top-level autocommit statement** (the procedure issues its own `COMMIT`/`ROLLBACK`, so it must not be wrapped in `BEGIN`), then reads the balance and the newest `wallet_audit_logs` row.
+Reads the wallet balance, runs `CALL sp_execute_checkout($1, $2, $3)` as a **plain autocommit statement** (the procedure issues its own `COMMIT`/`ROLLBACK`, so it must not be wrapped in `BEGIN`), then reads the new balance, the new order and the audit row written during the call.
 
 **201 Created**
 ```json
-{
-  "balanceBefore": "5000.00",
-  "balanceAfter":  "4550.00",
-  "order":      { "id": "uuid", "status": "PREPARING", "total_amount": "450.00", "created_at": "…" },
-  "auditEntry": { "id": "uuid", "action_type": "DEBIT", "amount_changed": "450.00", "balance_after": "4550.00", "timestamp": "…" }
-}
+{ "data": {
+    "balanceBefore": "5000.00",
+    "balanceAfter":  "4550.00",
+    "order":      { "id": "uuid", "restaurant_name": "Byte Cafe 101", "total_amount": "450.00", "status": "PREPARING", "created_at": "…" },
+    "auditEntry": { "id": "uuid", "action_type": "DEBIT", "amount_changed": "450.00", "balance_after": "4550.00", "timestamp": "…" } } }
 ```
 
-**Failures** (balance is re-read and returned so the UI can show it did not change):
+**Failures** (the wallet is unchanged; `balanceBefore` / `balanceAfter` are returned whenever the customer exists):
 
-| HTTP | `error.code` | Cause in DB | Friendly message |
-|---|---|---|---|
-| 422 | `INSUFFICIENT_BALANCE` | procedure raises `'Insufficient wallet balance'` (from `chk_wallet_balance`) | "Your wallet has ₹X but this order costs ₹Y." |
-| 409 | `ACTIVE_ORDER_EXISTS` | SQLSTATE `23505` on `idx_active_user_order` | "You already have an order that is PREPARING/DELIVERING. Wait for it to be delivered before placing another." |
-| 404 | `USER_NOT_FOUND` | procedure raises `'User does not exist'` | "That user does not exist." |
-| 404 | `RESTAURANT_NOT_FOUND` | SQLSTATE `23503` on `fk_orders_restaurant` | "That restaurant does not exist." |
-| 400 | `INVALID_AMOUNT` | validation (amount ≤ 0 or not a number) | "Amount must be greater than zero." |
+| HTTP | `code` | Raised by |
+|---|---|---|
+| 422 | `INSUFFICIENT_BALANCE` | procedure: `chk_wallet_balance` violated → `ROLLBACK` → `'Insufficient wallet balance'` (P0001) |
+| 409 | `ACTIVE_ORDER_EXISTS` | SQLSTATE `23505` on the partial unique index `idx_active_user_order` |
+| 404 | `RESTAURANT_NOT_FOUND` | SQLSTATE `23503` on `fk_orders_restaurant` |
+| 404 | `USER_NOT_FOUND` | API pre-check / procedure `'User does not exist'` (P0002) |
+| 400 | `INVALID_AMOUNT` | API validation (≤ 0, not a number, > 2 decimals) and the procedure's own guard (22023) |
 
-## 3. Order status (needed to demonstrate the partial unique index)
+## 3. Order status (demonstrates the partial unique index)
 
-| Method & path | Body | Returns | DB object |
-|---|---|---|---|
-| `PATCH /orders/:id/advance` | – | `{ id, previous_status, status }` — `PREPARING → DELIVERING → DELIVERED`; 409 `ALREADY_DELIVERED` if already final | new procedure `sp_advance_order_status(uuid)` (added by us, see handover note) |
+| Method & path | Returns | DB object |
+|---|---|---|
+| `PATCH /orders/:id/advance` | `{ data: { id, previous_status, status } }`: PREPARING → DELIVERING → DELIVERED. 409 `ORDER_ALREADY_DELIVERED` when already final, 404 `ORDER_NOT_FOUND` | `CALL sp_advance_order_status($1)` (`sql/07_fixes_transactions.sql`) |
 
 ## 4. Audit trail
 
 | Method & path | Query | Returns | DB object |
 |---|---|---|---|
-| `GET /users/:id/audit` | `from`, `to` (ISO dates, optional), `page`, `pageSize` | paged `{ id, timestamp, action_type, amount_changed, balance_after, running_balance }`, newest first, plus `openingBalance` / `closingBalance` for the filtered range | `wallet_audit_logs` (new index on `(user_id, timestamp)`); `running_balance` computed with a `SUM(...) OVER (ORDER BY timestamp)` window |
+| `GET /users/:id/audit` | `from`, `to`: a date `YYYY-MM-DD` (`to` inclusive) **or** an ISO timestamp (`to` exclusive; the web app sends the viewer's local midnights); `page`, `pageSize` | paged `{ id, timestamp, action_type, amount_changed, balance_after, running_balance }` newest first, plus `user` and `summary { entries, total_debits, total_credits, opening_balance, closing_balance }` | `wallet_audit_logs` (index `idx_wallet_audit_user_ts`). `running_balance` = opening balance + `SUM(signed amount) OVER (ORDER BY timestamp)` |
 
-## 5. Analytics — Workflow 2 + materialized view
+---
 
-| Method & path | Query / body | Returns | DB object |
-|---|---|---|---|
-| `GET /analytics/moving-average` | `restaurantId` (required) | `[ { order_date, daily_revenue, moving_average_7_day } ]` for the whole date range | Workflow 2 window query, wrapped as function `fn_restaurant_moving_average(uuid)` |
-| `GET /analytics/rankings` | `page`, `pageSize` | paged `{ revenue_rank, restaurant_id, restaurant_name, order_date, daily_revenue, moving_average_7_day }` | Workflow 2 final query (`DENSE_RANK()`), wrapped as view `v_restaurant_revenue_rank` |
-| `GET /analytics/summary` | – | `{ total_completed_revenue, total_completed_orders, restaurants, avg_revenue_per_restaurant, top_restaurants: [top 5], refreshed_at }` | `restaurant_completed_revenue` (MV) |
-| `POST /analytics/refresh` | – | `{ refreshed_at, duration_ms }` | `CALL refresh_restaurant_completed_revenue()` (`REFRESH … CONCURRENTLY`) |
+## 5. Analytics — Workflow 2 + materialized view (`api/src/routes/analytics.js`)
 
-## 6. Map — Workflow 3 (nearest driver to restaurant)
+| Method & path | Returns | DB object |
+|---|---|---|
+| `GET /analytics/moving-average` | `{ data: [ { revenue_date, moving_average_7_day } ] }` | Workflow 2 window query (`sql/06_window_analytics.sql`) |
+| `GET /analytics/rankings` | `{ data: [ { restaurant_id, restaurant_name, order_date, daily_revenue, moving_average_7_day, revenue_rank } ] }` | Workflow 2 query with `DENSE_RANK()` |
+| `GET /analytics/summary` | `{ data: { total_revenue, orders_processed, restaurants, average_order_value, last_refreshed } }` | `restaurant_completed_revenue` |
+| `POST /analytics/refresh` | `{ success, lastRefreshed }` | `CALL refresh_restaurant_completed_revenue()` (`REFRESH … CONCURRENTLY`) |
 
-| Method & path | Query | Returns | DB object |
-|---|---|---|---|
-| `GET /map/nearest-drivers` | **either** `restaurantId` (origin coordinates looked up in PostgreSQL) **or** `lng` + `lat`; `radius` (m, default 5000); `limit` (default 20) | `{ origin: {lng, lat}, radius, drivers: [ { driver_id, location: {lng, lat}, distance_m, created_at } ] }` sorted by distance | MongoDB `DriverPings` `$geoNear` (`2dsphere` index), `query: { active: true }`, grouped to one row per driver |
-
-The UI polls this endpoint every 5 s (TanStack Query `refetchInterval`) so new pings appear without a page reload.
-
-| `POST /map/simulate-pings` | body `{ count: 20 }` (optional, demo only) | `{ inserted }` | inserts fresh `DriverPings` near the origin (TTL index expires pings after 2 h) |
-|---|---|---|---|
-
-## 7. Reviews + catalog — Workflow 4
+## 6. Map — Workflow 3 (`api/src/routes/map.js`)
 
 | Method & path | Query | Returns | DB object |
 |---|---|---|---|
-| `GET /reviews/facets` | `restaurantId` (optional; omitted = all reviews) | `{ rating_distribution: [ {rating, count} ], most_frequent_tags: [ {tag, count} ], overall_average_rating }` | MongoDB `Reviews` `$facet` pipeline (optional `$match` on `restaurant_id` before `$project`) |
-| `GET /reviews` | `restaurantId`, `page`, `pageSize` | paged review documents, newest first | `Reviews` |
-| `GET /menus/:restaurantId` | – | the menu document (`categories[] → items[] → customization_addons[]`), 404 `MENU_NOT_FOUND` if none | `Menus` |
+| `GET /map/nearby` | `lat`, `lng`, `radiusKm` (≤ 5) | `{ origin, radiusKm, data: [ { driver_id, active, location, distanceMeters, created_at } ] }` sorted by distance | MongoDB `DriverPings` `$geoNear` (`2dsphere`), `query: { active: true }` |
+
+The web app polls this every 10 s so new pings appear without a page reload.
+
+## 7. Reviews + catalog — Workflow 4 (`api/src/routes/reviews.js`)
+
+| Method & path | Returns | DB object |
+|---|---|---|
+| `GET /reviews/analytics` | `{ data: { averageRating, totalReviews, distribution[], topTags[], restaurants[] } }` | MongoDB `Reviews` `$facet` |
+| `GET /reviews/menus` | `{ data: [ menu documents ] }` | MongoDB `Menus` |
 
 ## 8. Misc
 
 | Method & path | Returns |
 |---|---|
-| `GET /health` | `{ postgres: "ok", mongo: "ok" }` (used by the UI banner and docker-compose healthcheck) |
+| `GET /health` | `{ status: "ok", mode: "database" \| "demo" }`, polled by the sidebar's "API connected" indicator |

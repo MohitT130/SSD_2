@@ -217,3 +217,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .DS_Store
+
+# Node (Team 26)
+node_modules/
+.env.*
+!.env.example
+coverage/

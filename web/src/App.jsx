@@ -1,8 +1,62 @@
-import { useState } from 'react';
-import { Bell, Search, ChevronDown, Command, CircleHelp } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar.jsx';
+import ActorPicker from './components/ActorPicker.jsx';
+import Browse from './pages/Browse.jsx';
+import PlaceOrder from './pages/PlaceOrder.jsx';
+import WalletHistory from './pages/WalletHistory.jsx';
 import Analytics from './pages/Analytics.jsx';
 import DriverMap from './pages/DriverMap.jsx';
 import Reviews from './pages/Reviews.jsx';
-const pageNames={analytics:'Analytics',map:'Live driver map',reviews:'Reviews & menus'};
-export default function App(){const [page,setPage]=useState('analytics'),[collapsed,setCollapsed]=useState(false);return <div className="app-shell"><Sidebar page={page} setPage={setPage} collapsed={collapsed} setCollapsed={setCollapsed}/><main className="main-area"><header className="topbar"><div className="breadcrumbs"><span>Workspace</span><span className="crumb-slash">/</span><strong>{pageNames[page]}</strong></div><div className="topbar-actions"><div className="global-search"><Search size={16}/><span>Search anything…</span><kbd><Command size={11}/> K</kbd></div><button className="icon-button" aria-label="Help"><CircleHelp size={18}/></button><button className="icon-button notification-button" aria-label="Notifications"><Bell size={18}/><i/></button><div className="profile"><div className="profile-avatar">BS</div><div className="profile-copy"><strong>Ops team</strong><span>Administrator</span></div><ChevronDown size={15}/></div></div></header>{page==='analytics'?<Analytics/>:page==='map'?<DriverMap/>:<Reviews/>}<footer className="app-footer"><span>© 2026 BiteStream Operations</span><span><i className="status-dot"/> Internal dashboard · Assignment 2</span></footer></main></div>}
+import { ActorProvider } from './context/ActorContext.jsx';
+import { navigate, useHashRoute } from './router';
+import { api } from './services/api';
+
+const pages = {
+  browse: { name: 'Browse', component: Browse },
+  order: { name: 'Place order', component: PlaceOrder },
+  wallet: { name: 'Wallet history', component: WalletHistory },
+  analytics: { name: 'Analytics', component: Analytics },
+  map: { name: 'Live driver map', component: DriverMap },
+  reviews: { name: 'Reviews & menus', component: Reviews },
+};
+
+export default function App() {
+  const route = useHashRoute();
+  const [collapsed, setCollapsed] = useState(false);
+  const [apiStatus, setApiStatus] = useState('checking');
+  const page = pages[route.page] ? route.page : 'browse';
+  const Page = pages[page].component;
+
+  useEffect(() => {
+    const check = () => api.health().then(() => setApiStatus('ok')).catch(() => setApiStatus('down'));
+    check();
+    const timer = setInterval(check, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <ActorProvider>
+      <div className="app-shell">
+        <Sidebar page={page} setPage={(id) => navigate(id)} collapsed={collapsed} setCollapsed={setCollapsed} apiStatus={apiStatus} />
+        <main className="main-area">
+          <header className="topbar">
+            <div className="breadcrumbs"><span>Workspace</span><span className="crumb-slash">/</span><strong>{pages[page].name}</strong></div>
+            <div className="topbar-actions">
+              <span className="acting-label">Acting as</span>
+              <ActorPicker />
+            </div>
+          </header>
+          {apiStatus === 'down' && (
+            <div className="page-content api-down">
+              <div className="error-banner" role="alert">
+                <span>The API at http://localhost:4000 is not reachable. Start it with <code>npm run dev</code> in <code>api/</code>; data will load once it is running.</span>
+              </div>
+            </div>
+          )}
+          <Page key={page} params={route.params} />
+          <footer className="app-footer"><span>© 2026 BiteStream · Team 26</span><span><i className="status-dot" /> CS6.302 Assignment 2</span></footer>
+        </main>
+      </div>
+    </ActorProvider>
+  );
+}
