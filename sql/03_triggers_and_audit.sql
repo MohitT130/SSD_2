@@ -36,6 +36,8 @@ $$ LANGUAGE plpgsql;
 
 
 -- Run the audit function whenever the wallet balance changes
+DROP TRIGGER IF EXISTS wallet_balance_audit ON users;
+
 CREATE TRIGGER wallet_balance_audit
 AFTER UPDATE OF wallet_balance ON users
 FOR EACH ROW
