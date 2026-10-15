@@ -1,87 +1,107 @@
-# Style Guide
+# Style Guide: "Kitchen Ticket"
 
-**Owner:** Nisarg Bhojani. The design system is plain CSS built on design tokens:
+**Owner:** Nisarg Bhojani · Spec: [2026-10-15-kitchen-ticket-design.md](2026-10-15-kitchen-ticket-design.md)
 
-- **`web/src/theme.css`** holds every token as a CSS custom property, and is the single source of truth.
-- **`web/src/theme.js`** mirrors the colour values for Recharts and Leaflet, which cannot read CSS variables.
-- **`web/src/styles.css`** (shell, shared components, Analytics/Map/Reviews) and **`web/src/screens.css`** (Browse, Place order, Wallet) use only the tokens.
+## Concept
 
-Mantine was planned at first and dropped: plain CSS kept the bundle small and needed no component rewrite. The UI upgrade spec is [2026-10-15-ui-upgrade-design.md](2026-10-15-ui-upgrade-design.md).
+**Every screen is a piece of restaurant paper.**
 
-## Colours
+| Screen | Paper it becomes |
+|---|---|
+| An order | A kitchen order ticket (KOT): notched, perforated, stamped PAID or VOID |
+| Wallet history | A bank passbook: ruled ledger, printed amounts, a red margin rule |
+| Analytics | The day's board: big printed figures and medals |
+| Driver map | Dispatch slips |
+| Menu | A printed menu card with dotted leaders |
 
-The palette follows Mantine's colour scale. Three values were adjusted so text passes WCAG AA (4.5:1).
+Every visual choice follows from the metaphor:
+- serif figures, because bills are printed
+- mono codes, because tickets come from a thermal printer
+- stamps, because the kitchen stamps orders
+- perforations, because tickets tear off
 
-| Token | Hex | Used for |
+## Files
+
+| File | Role |
+|---|---|
+| `web/src/theme.css` | Design tokens: the single source of truth |
+| `web/src/theme.js` | The same colours for Recharts and Leaflet (which can't read CSS variables) |
+| `web/src/styles.css`, `web/src/screens.css` | Layout and components |
+| `web/src/kitchen.css` | The concept layer: type roles, paper, motifs, motion, one signature moment per screen |
+| `web/scripts/check-contrast.mjs` | `npm run check:contrast`: fails if any text/background token pair is below 4.5:1 |
+
+## Colour
+
+| Token | Hex | Role |
 |---|---|---|
-| `--brand` | `#E8590C` | Accent fills: active nav marker, chart series, map origin and radius, focus ring |
-| `--brand-strong` | `#C2410C` | Primary buttons and orange text (5.2:1 on white; `#E8590C` is only 3.6:1) |
-| `--brand-soft` | `#FFF4E6` | Active nav item, selected table row, avatar |
-| `--success` / `-strong` / `-soft` | `#2F9E44` / `#1F7A35` / `#EBFBEE` | CREDIT, DELIVERED, successful checkout, dietary tags |
-| `--danger` / `-strong` / `-soft` | `#E03131` / `#C92A2A` / `#FFF5F5` | DEBIT, errors, insufficient balance, spice level |
-| `--warning` / `-strong` / `-soft` | `#F08C00` / `#A35200` / `#FFF9DB` | PREPARING, "already has an active order", star ratings |
-| `--info` / `-strong` / `-soft` | `#1971C2` / `#1864AB` / `#E7F5FF` | DELIVERING, drivers on the map |
-| `--text` | `#212529` | Body text |
-| `--text-muted` | `#6C757D` | Secondary text (4.7:1; the first draft's `#868E96` is 3.3:1 and failed) |
-| `--text-faint` | `#868E96` | Icons and decoration only, never text |
-| `--surface` / `--page` | `#FFFFFF` / `#F8F9FA` | Cards / page background |
-| `--border` | `#E9ECEF` | Card, table and input borders |
+| `--page` | `#F6EFE3` | Warm paper (page), with a 2 % grain |
+| `--surface` | `#FFFDF8` | Ticket stock (cards) |
+| `--hover` / `--border` / `--border-strong` | `#F1E8D9` / `#E4D7C3` / `#D3C2A8` | Tracks, rules, perforations |
+| `--text` | `#221C17` | Ink (14.7:1 on paper) |
+| `--text-muted` | `#6B5E52` | Secondary text (5.5:1 on paper) |
+| `--brand` / `--brand-strong` / `--brand-soft` | `#E8590C` / `#C2410C` / `#FDEFE3` | Saffron: accent, buttons and orange text, selected states |
+| `--success*` | `#2E7D32` / `#25672A` / `#E7F2E3` | Curry leaf: CREDIT, DELIVERED, PAID |
+| `--danger*` | `#B23A12` / `#9A3110` / `#FBE9E2` | Chili: DEBIT, errors, VOID |
+| `--warning*` | `#B7791F` / `#8A5A12` / `#FBF0D9` | Turmeric: PREPARING, star ratings |
+| `--info*` | `#2B4C7E` / `#22406B` / `#E5ECF5` | Indigo ink: DELIVERING, drivers |
+| `--gold` / `--silver` / `--bronze` | `#E6C25A` / `#CBD2D9` / `#D9A273` | Medal ranks 1–3 |
 
-**Status pairs:** each status uses its `-strong` colour for text on its `-soft` background, so every badge passes 4.5:1.
+Every `-strong` colour is used for text on its `-soft` fill. All pairs pass WCAG AA (checked by the script).
 
-- PREPARING = warning
-- DELIVERING = info
-- DELIVERED = success
-- DEBIT = danger
-- CREDIT = success
+## Type: three voices, each with a job
 
-## Typography
+| Voice | Font | Used for |
+|---|---|---|
+| Printed | **Fraunces** (variable serif, optical sizes) | Page titles, every big number and money on tickets, rating score, menu dishes |
+| Ticket printer | **JetBrains Mono** | Eyebrows, table headers, order codes, times, stamps, captions, date stamp |
+| Interface | **Inter** | Labels, body text, buttons, inputs |
 
-- **Font:** Inter (Google Fonts, free), fallback `system-ui, sans-serif`.
-- **Scale:**
-  - page title 24/600
-  - section title 18/600
-  - card title 16/600
-  - body 14/400
-  - table 13/400
-  - caption 12/500
-  - nothing smaller than 12 px
-- **Stat values:** 28/700 (22 on phones).
-- **Money:** `tabular-nums`, right-aligned in tables, formatted `₹1,234.50` (Indian digit grouping via `en-IN`).
+**Scale:**
+- page title 30 / 600 serif
+- board figures 40 (phone: up to 28)
+- stat figures 32
+- section 18–19
+- body 14, table 13
+- caption 12
+- nothing below 12 px
 
-## Spacing and shape
+## Motifs
 
-- **Spacing:** 8 px grid (`--space-1` to `--space-4` = 8/16/24/32).
-- **Radius:** `--radius` 8 px (inputs, buttons, badges) and `--radius-lg` 12 px (cards).
-- **Borders and shadows:** 1 px `--border`, almost no shadow. Only menus and drawers float, with `--shadow-pop`.
-- **Content width:** max 1440 px. Form controls are 40 px tall. Every focusable element shows an orange focus ring.
+- **Perforation:** dashed rules under card headings, inside stat cards and between ticket sections.
+- **Ticket notches:** half-circle cut-outs on both edges (CSS mask). Used on the order result, the dispatch slips and the brand mark.
+- **Rubber stamp:** mono caps in an outlined box. Order statuses and DEBIT/CREDIT in tables; large rotated PAID / VOID on the order result.
+- **Passbook rule:** a red double margin line before the amount columns in Wallet history.
+- **Dotted leaders:** run from each dish to its price on the menu card.
+- **Tear-off pad:** the sidebar and top bar edges are perforated.
 
-## Identity
+## Motion
 
-- **Logo:** a solid orange square holding a utensils icon, plus the "BiteStream" wordmark in Inter 600 with the tagline "Food delivery console".
-- **Charts:** orange bars and lines on light grey gridlines.
-- **Map:** an orange origin pin with an orange dashed 5 km circle; drivers are blue dots.
-- **Stat cards:** a small monochrome icon instead of coloured tiles.
+| Moment | Behaviour |
+|---|---|
+| Page enter | Sections rise 10 px and fade, staggered 40 ms |
+| Stat figures | Count up (`CountUp`, ease-out, 0.7 s); later changes count from the previous value |
+| Order result | The ticket prints out of a slot; the stamp lands 0.45 s later with a slight overshoot |
+| Map origin | Saffron pulse, 2 s loop |
+| Rows and slips | 1–2 px lift on hover |
+
+Under `prefers-reduced-motion: reduce` every animation lands on its final frame, and count-ups show the final value immediately.
 
 ## Responsive
 
 | Width | Layout |
 |---|---|
-| ≥ 1200 px | Sidebar (248 px) + content; 4 stat cards per row; split layouts side by side |
+| ≥ 1200 px | Sidebar plus content; 4 stat cards per row; the Analytics chart stays beside the ranking (sticky) |
 | 1024–1199 px | 2 stat cards per row; chart and table stack |
-| 768–1023 px | Sidebar becomes a 76 px icon rail; the map list moves below the map |
-| < 768 px | Sidebar hidden. A top bar has a burger button that opens the navigation as a drawer (Esc or a backdrop click closes it). Cards stack, tables scroll sideways, segmented tabs fill the width. No horizontal page scroll at 390 px. |
+| 768–1023 px | Icon-rail sidebar; map list below the map |
+| < 768 px | Burger drawer; board figures scale down; the top bar keeps one line for the title and one for the actor (active order shown as a dot); no horizontal scroll at 390 px |
 
-## Reusable components
+## Components
 
-| Component | File | Purpose |
-|---|---|---|
-| App shell, `Sidebar` | `App.jsx`, `components/Sidebar.jsx` | Navigation, brand, API status, phone drawer |
-| `ActorPicker` | `components/ActorPicker.jsx` | "Acting as" customer with wallet balance and active-order flag |
-| `RestaurantPicker` | `components/RestaurantPicker.jsx` | Searchable restaurant select used on Place order, Analytics, Map and Reviews |
-| `Panel`, `StatCard` | `components/Panel.jsx`, `components/StatCard.jsx` | Card with heading; big number + label |
-| `StatusBadge`, `ActionBadge` | `components/ui.jsx` | Order status and DEBIT/CREDIT pills |
-| `Pagination`, `SkeletonRows`, `Drawer`, `DetailList` | `components/ui.jsx` | Server-side paging, loading rows, record detail |
-| `EmptyState`, `ErrorBanner` | `components/ui.jsx` | Never a blank page; friendly error with Retry |
-| Segmented control | `.tabs` / `.tab` | Browse entity tabs, Reviews scope |
-| Menu accordion | `.menu-accordion` (Reviews) | Category → items → add-ons; optional fields only when present |
+| Component | Purpose |
+|---|---|
+| `StatCard` | A small receipt. Optional `countTo` and `format` count the figure up |
+| `CountUp` | Animated number that respects reduced motion |
+| `StatusBadge`, `ActionBadge` | Rendered as stamps |
+| `Panel` | Ticket-stock card with a perforated heading |
+| `RestaurantPicker`, `ActorPicker` | Searchable selects |
+| `Pagination`, `SkeletonRows`, `Drawer`, `DetailList`, `EmptyState`, `ErrorBanner` | Shared states; never a blank page |
