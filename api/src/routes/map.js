@@ -5,6 +5,8 @@ import { demoPings } from '../demo.js';
 
 const router = Router();
 
+const NEAREST_LIMIT = 20;
+
 router.get('/nearby', async (req, res, next) => {
   const lat = Number(req.query.lat ?? 17.3850);
   const lng = Number(req.query.lng ?? 78.4867);
@@ -41,12 +43,15 @@ router.get('/nearby', async (req, res, next) => {
     const collection =
       process.env.DRIVER_PINGS_COLLECTION || 'DriverPings';
 
+    // Workflow 3. Each driver sends many pings, so after $geoNear the pings
+    // are grouped per driver, keeping the latest ping and its distance (the
+    // marker and the listed distance then agree), and sorted nearest first.
     const data = await db.collection(collection).aggregate([
       {
         $geoNear: {
           near: {
             type: 'Point',
-            coordinates: [lng, lat]
+            coordinates: [lng, lat] // GeoJSON order is [longitude, latitude]
           },
           key: 'location',
           distanceField: 'distanceMeters',
@@ -55,18 +60,27 @@ router.get('/nearby', async (req, res, next) => {
           query: { active: true }
         }
       },
-      { $limit: 100 },
+      { $sort: { driver_id: 1, created_at: -1 } },
+      {
+        $group: {
+          _id: '$driver_id',
+          location: { $first: '$location' },
+          created_at: { $first: '$created_at' },
+          distanceMeters: { $first: '$distanceMeters' }
+        }
+      },
+      { $sort: { distanceMeters: 1, _id: 1 } },
+      { $limit: NEAREST_LIMIT },
       {
         $project: {
           _id: 0,
-          driver_id: 1,
-          active: 1,
+          driver_id: '$_id',
           location: 1,
           distanceMeters: 1,
           created_at: 1
         }
       }
-    ]).toArray();
+    ], { allowDiskUse: true }).toArray();
 
     res.json({
       origin: { lat, lng },

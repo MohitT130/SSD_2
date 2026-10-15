@@ -89,3 +89,25 @@ describe('Analytics: Workflow 2 and the materialized view', () => {
     assert.equal(Date.parse(after), Date.parse(body.data.refreshed_at));
   });
 });
+
+describe('Driver map: Workflow 3 ($geoNear)', () => {
+  test('nearby drivers: one row per driver, nearest first, all within 5 km, at most 20', async () => {
+    const r = (await getPgPool().query('SELECT latitude, longitude FROM restaurants ORDER BY id LIMIT 1')).rows[0];
+    const { status, body } = await api('GET', `/map/nearby?lat=${r.latitude}&lng=${r.longitude}`);
+    assert.equal(status, 200);
+
+    const ids = body.data.map((d) => d.driver_id);
+    assert.ok(body.data.length > 0 && body.data.length <= 20, `got ${body.data.length} rows`);
+    assert.equal(new Set(ids).size, ids.length, 'a driver appears more than once');
+    body.data.forEach((d, i, all) => {
+      assert.ok(d.distanceMeters <= 5000);
+      if (i > 0) assert.ok(all[i - 1].distanceMeters <= d.distanceMeters);
+    });
+  });
+
+  test('a far-away origin returns an empty list, not an error', async () => {
+    const { status, body } = await api('GET', '/map/nearby?lat=0&lng=0');
+    assert.equal(status, 200);
+    assert.deepEqual(body.data, []);
+  });
+});

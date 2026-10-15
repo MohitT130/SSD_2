@@ -1,400 +1,218 @@
-
-import { useEffect, useMemo, useState } from 'react';
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  Circle,
-  useMap,
-} from 'react-leaflet';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Circle, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import {
-  MapPin,
-  RefreshCw,
-  Navigation,
-  Radio,
-  AlertCircle,
-} from 'lucide-react';
+import { MapPin, MousePointerClick, Radio, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
 import Panel from '../components/Panel';
+import RestaurantPicker from '../components/RestaurantPicker';
+import { EmptyState, ErrorBanner } from '../components/ui';
+import { colors } from '../theme';
 
-// The first origin is a verified test location with active MongoDB drivers.
-const origins = [
-  {
-    label: 'Driver test location',
-    lat: 17.4485,
-    lng: 78.4075,
-  },
-  {
-    label: 'Restaurant · Banjara Hills',
-    lat: 17.3850,
-    lng: 78.4867,
-  },
-  {
-    label: 'Restaurant · Jubilee Hills',
-    lat: 17.4310,
-    lng: 78.4070,
-  },
-  {
-    label: 'Restaurant · Gachibowli',
-    lat: 17.4401,
-    lng: 78.3489,
-  },
-];
+const RADIUS_KM = 5;
+const POLL_MS = 10000;
 
-const driverIcon = L.divIcon({
-  className: 'driver-marker-wrap',
-  html: '<div class="driver-marker"><span></span></div>',
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
+const originIcon = L.divIcon({
+  className: 'origin-marker-wrap',
+  html: '<div class="origin-marker"><span></span></div>',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+  popupAnchor: [0, -28],
 });
+const driverIcon = (selected) => L.divIcon({
+  className: 'driver-marker-wrap',
+  html: `<div class="driver-marker${selected ? ' selected' : ''}"></div>`,
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
+
+const formatDistance = (meters) =>
+  meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(2)} km`;
+
+function timeAgo(value) {
+  const minutes = Math.round((Date.now() - new Date(value).getTime()) / 60000);
+  if (!Number.isFinite(minutes)) return '—';
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  return `${Math.floor(minutes / 60)} h ${minutes % 60} min ago`;
+}
+
+// GeoJSON stores [longitude, latitude]; Leaflet wants [latitude, longitude].
+const toLatLng = (driver) => [driver.location.coordinates[1], driver.location.coordinates[0]];
 
 function Recenter({ center }) {
   const map = useMap();
-
-  useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
-
+  useEffect(() => { map.setView(center, map.getZoom()); }, [center, map]);
   return null;
 }
 
-function getCoordinates(driver) {
-  if (
-    Number.isFinite(driver.latitude) &&
-    Number.isFinite(driver.longitude)
-  ) {
-    return [driver.latitude, driver.longitude];
-  }
-
-  const coordinates = driver.location?.coordinates;
-
-  if (
-    Array.isArray(coordinates) &&
-    coordinates.length === 2 &&
-    Number.isFinite(coordinates[0]) &&
-    Number.isFinite(coordinates[1])
-  ) {
-    // GeoJSON stores [longitude, latitude].
-    return [coordinates[1], coordinates[0]];
-  }
-
+function PickOnClick({ onPick }) {
+  useMapEvents({ click: (event) => onPick(event.latlng) });
   return null;
 }
 
-function formatDistance(meters) {
-  const distance = Number(meters);
-
-  if (!Number.isFinite(distance)) return 'Distance unavailable';
-
-  return distance < 1000
-    ? `${Math.round(distance)} m`
-    : `${(distance / 1000).toFixed(2)} km`;
-}
-
+// Screen 5: Workflow 3. Nearest active drivers ($geoNear) around a
+// restaurant from PostgreSQL or a point clicked on the map.
 export default function DriverMap() {
-  const [originIndex, setOriginIndex] = useState(0);
+  const [origin, setOrigin] = useState(null); // { lat, lng, label, restaurant }
   const [drivers, setDrivers] = useState([]);
-  const [source, setSource] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [lastUpdate, setLastUpdate] = useState(null);
   const [polling, setPolling] = useState(true);
+  const [selectedId, setSelectedId] = useState(null);
+  const [map, setMap] = useState(null);
 
-  const origin = origins[originIndex];
+  // Default origin: the first restaurant.
+  useEffect(() => {
+    api.restaurants({ pageSize: 1 })
+      .then((result) => {
+        const first = result.data[0];
+        if (first) setOrigin({ lat: first.latitude, lng: first.longitude, label: first.name, restaurant: first });
+        else setLoading(false);
+      })
+      .catch((e) => { setError(e.message); setLoading(false); });
+  }, []);
 
-  async function load(isPoll = false) {
-    if (!isPoll) setLoading(true);
-
+  const load = useCallback(async () => {
+    if (!origin) return;
     setError('');
-
     try {
-      const result = await api.nearby(
-        origin.lat,
-        origin.lng,
-        5
-      );
-
-      const rows = Array.isArray(result.data) ? result.data : [];
-
-      const nearbyDrivers = rows
-        .map((driver, index) => ({
-          ...driver,
-          _coords: getCoordinates(driver),
-          _id:
-            driver.driver_id ??
-            driver.driverId ??
-            driver._id ??
-            index,
-        }))
-        .filter((driver) => driver._coords)
-        .sort(
-          (a, b) =>
-            Number(a.distanceMeters ?? Infinity) -
-            Number(b.distanceMeters ?? Infinity)
-        );
-
-      setDrivers(nearbyDrivers);
-      setSource(result.source || '');
+      const result = await api.nearby(origin.lat, origin.lng, RADIUS_KM);
+      setDrivers(result.data);
       setLastUpdate(new Date());
-    } catch (err) {
-      setError(err.message || 'Unable to load nearby drivers.');
+    } catch (e) {
+      setError(e.message);
     } finally {
       setLoading(false);
     }
-  }
+  }, [origin]);
 
+  // Load now, then poll so new pings appear without a page reload.
   useEffect(() => {
-    let cancelled = false;
-    let timer;
+    if (!origin) return undefined;
+    setLoading(true);
+    setSelectedId(null);
+    load();
+    if (!polling) return undefined;
+    const timer = setInterval(load, POLL_MS);
+    return () => clearInterval(timer);
+  }, [origin, polling, load]);
 
-    async function pollDrivers() {
-      if (cancelled) return;
+  const center = useMemo(() => (origin ? [origin.lat, origin.lng] : [17.41, 78.38]), [origin]);
 
-      await load();
-
-      if (!cancelled && polling) {
-        timer = setTimeout(pollDrivers, 10000);
-      }
-    }
-
-    pollDrivers();
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [originIndex, polling]);
-
-  const center = useMemo(
-    () => [origin.lat, origin.lng],
-    [origin]
-  );
+  function selectDriver(driver) {
+    setSelectedId(driver.driver_id);
+    map?.flyTo(toLatLng(driver), Math.max(map.getZoom(), 15), { duration: .6 });
+  }
 
   return (
     <div className="page-content">
       <div className="page-title-row">
         <div>
-          <div className="eyebrow">REAL-TIME OPERATIONS</div>
-          <h1>Driver map</h1>
-          <p className="page-description">
-            Find available drivers near a selected restaurant,
-            sorted by proximity.
-          </p>
+          <div className="eyebrow">Workflow 3 · Dispatch</div>
+          <h1>Live driver map</h1>
+          <p className="page-description">Active drivers within {RADIUS_KM} km of a restaurant, nearest first, from a <code>$geoNear</code> query on <code>DriverPings</code>. Click the map to search around any point.</p>
         </div>
-
-        <button
-          className="button secondary"
-          onClick={() => load()}
-          disabled={loading}
-        >
-          <RefreshCw size={16} />
-          Refresh now
+        <button className="button secondary" onClick={load} disabled={!origin}>
+          <RefreshCw size={16} /> Refresh now
         </button>
       </div>
 
-      {source === 'demo' && (
-        <div className="demo-banner">
-          <span className="demo-dot" />
-          Demo locations are displayed.
-        </div>
-      )}
-
-      {error && (
-        <div className="error-banner">
-          <AlertCircle size={17} />
-          <span>{error}</span>
-          <button onClick={() => load()}>Retry</button>
-        </div>
-      )}
+      <ErrorBanner message={error} onRetry={load} />
 
       <div className="map-toolbar">
         <label className="origin-select">
-          <span>Search origin</span>
-
-          <select
-            value={originIndex}
-            onChange={(event) =>
-              setOriginIndex(Number(event.target.value))
-            }
-          >
-            {origins.map((item, index) => (
-              <option key={item.label} value={index}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="radius-chip">
-          <MapPin size={16} />
-          5 km radius
-        </div>
-
-        <label className="poll-toggle">
-          <input
-            type="checkbox"
-            checked={polling}
-            onChange={(event) => setPolling(event.target.checked)}
+          <span>Origin restaurant</span>
+          <RestaurantPicker
+            value={origin?.restaurant ?? (origin ? { name: origin.label } : null)}
+            onChange={(r) => setOrigin({ lat: r.latitude, lng: r.longitude, label: r.name, restaurant: r })}
           />
+        </label>
+        <div className="radius-chip"><MapPin size={16} /> {RADIUS_KM} km radius</div>
+        <label className="poll-toggle">
+          <input type="checkbox" checked={polling} onChange={(event) => setPolling(event.target.checked)} />
           Live updates
-          <span className="live-dot" />
+          <span className={`live-dot ${polling ? '' : 'paused'}`} />
         </label>
       </div>
 
       <div className="map-layout">
         <Panel
-          title="Nearby drivers"
-          subtitle={`${drivers.length} available within 5 km`}
+          title="Nearest active drivers"
+          subtitle={loading && !drivers.length ? 'Searching…' : `${drivers.length} driver${drivers.length === 1 ? '' : 's'} within ${RADIUS_KM} km of ${origin?.label ?? '…'}`}
           className="drivers-panel"
         >
           <div className="driver-list">
-            {loading && drivers.length === 0 ? (
-              <div className="chart-empty">
-                Loading nearby drivers…
-              </div>
-            ) : (
-              drivers.map((driver, index) => (
-                <button
-                  className="driver-row"
-                  key={driver._id}
-                  type="button"
-                  onClick={() => {
-                    // Marker popups identify the selected driver.
-                    const mapElement = document.querySelector(
-                      '.leaflet-map'
-                    );
-                    mapElement?.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'nearest',
-                    });
-                  }}
-                >
-                  <div className="driver-avatar">
-                    <Navigation size={17} />
-                  </div>
-
-                  <div className="driver-info">
-                    <strong>
-                      {driver.driverName ||
-                        driver.name ||
-                        `Driver ${driver.driver_id ?? index + 1}`}
-                    </strong>
-
-                    <span>
-                      ID: {driver.driver_id ?? driver.driverId ?? '—'}
-                      {' · '}
-                      <span className="available-text">
-                        Available
-                      </span>
-                    </span>
-                  </div>
-
-                  <div className="driver-distance">
-                    {formatDistance(driver.distanceMeters)}
-                    <small>away</small>
-                  </div>
-                </button>
-              ))
-            )}
-
-            {!loading && drivers.length === 0 && (
-              <div className="empty-state">
-                <MapPin size={25} />
-                <strong>No drivers nearby</strong>
-                <span>
-                  Try the test location or refresh later.
-                </span>
-              </div>
+            {loading && !drivers.length ? (
+              <div className="chart-empty">Finding drivers…</div>
+            ) : drivers.length ? drivers.map((driver, index) => (
+              <button
+                type="button"
+                key={driver.driver_id}
+                className={`driver-row ${selectedId === driver.driver_id ? 'selected' : ''}`}
+                onClick={() => selectDriver(driver)}
+              >
+                <div className="driver-avatar">{index + 1}</div>
+                <div className="driver-info">
+                  <strong>Driver #{driver.driver_id}</strong>
+                  <span>Last ping {timeAgo(driver.created_at)} · <span className="available-text">Active</span></span>
+                </div>
+                <div className="driver-distance">{formatDistance(driver.distanceMeters)}<small>away</small></div>
+              </button>
+            )) : (
+              <EmptyState
+                icon={MapPin}
+                title={`No active drivers within ${RADIUS_KM} km`}
+                text="Pings expire after 2 hours. Pick another restaurant, or re-run the Mongo seeder."
+              />
             )}
           </div>
-
           <div className="map-list-footer">
             <Radio size={15} />
-            {polling
-              ? 'Polling every 10 seconds'
-              : 'Live updates paused'}
-
-            {lastUpdate && (
-              <span>
-                Updated {lastUpdate.toLocaleTimeString()}
-              </span>
-            )}
+            {polling ? `Updating every ${POLL_MS / 1000} s` : 'Live updates paused'}
+            {lastUpdate && <span>Updated {lastUpdate.toLocaleTimeString('en-IN')}</span>}
           </div>
         </Panel>
 
-        <Panel
-          title="Live location"
-          subtitle="OpenStreetMap · approximate driver positions"
-          className="leaflet-panel"
-        >
+        <Panel title="Map" subtitle="OpenStreetMap · click anywhere to move the origin" className="leaflet-panel">
           <div className="leaflet-frame">
-            <MapContainer
-              center={center}
-              zoom={14}
-              scrollWheelZoom
-              className="leaflet-map"
-            >
+            <MapContainer center={center} zoom={13} scrollWheelZoom className="leaflet-map" ref={setMap}>
               <Recenter center={center} />
-
+              <PickOnClick onPick={({ lat, lng }) => setOrigin({ lat, lng, label: 'pinned location', restaurant: null })} />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-
               <Circle
                 center={center}
-                radius={5000}
-                pathOptions={{
-                  color: '#5279e7',
-                  fillColor: '#5279e7',
-                  fillOpacity: 0.06,
-                  weight: 1.5,
-                  dashArray: '5 6',
-                }}
+                radius={RADIUS_KM * 1000}
+                pathOptions={{ color: colors.brand, fillColor: colors.brand, fillOpacity: 0.06, weight: 1.5, dashArray: '6 6' }}
               />
-
-              <Marker position={center}>
-                <Popup>
-                  {origin.label}
-                  <br />
-                  Selected origin
-                </Popup>
-              </Marker>
-
-              {drivers.map((driver, index) => (
+              {origin && (
+                <Marker position={center} icon={originIcon}>
+                  <Popup><strong>{origin.restaurant ? origin.label : 'Pinned location'}</strong><br />Search origin</Popup>
+                </Marker>
+              )}
+              {drivers.map((driver) => (
                 <Marker
-                  key={driver._id ?? index}
-                  position={driver._coords}
-                  icon={driverIcon}
+                  key={driver.driver_id}
+                  position={toLatLng(driver)}
+                  icon={driverIcon(selectedId === driver.driver_id)}
+                  eventHandlers={{ click: () => setSelectedId(driver.driver_id) }}
                 >
                   <Popup>
-                    <strong>
-                      {driver.driverName ||
-                        driver.name ||
-                        `Driver ${driver.driver_id ?? index + 1}`}
-                    </strong>
-                    <br />
-                    ID: {driver.driver_id ?? '—'}
-                    <br />
-                    {formatDistance(driver.distanceMeters)} away
+                    <strong>Driver #{driver.driver_id}</strong><br />
+                    {formatDistance(driver.distanceMeters)} away · last ping {timeAgo(driver.created_at)}
                   </Popup>
                 </Marker>
               ))}
             </MapContainer>
           </div>
-
           <div className="map-legend">
-            <span>
-              <i className="legend-origin" /> Selected origin
-            </span>
-            <span>
-              <i className="legend-driver" /> Available driver
-            </span>
-            <span>
-              <i className="legend-radius" /> 5 km radius
-            </span>
+            <span><i className="legend-origin" /> Search origin</span>
+            <span><i className="legend-driver" /> Active driver</span>
+            <span><i className="legend-radius" /> {RADIUS_KM} km radius</span>
+            <span><MousePointerClick size={13} /> Click the map to move the origin</span>
           </div>
         </Panel>
       </div>
