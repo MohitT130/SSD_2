@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BiteStream Wireframes</title>
+<!--
+  Low-fidelity wireframes for the six BiteStream screens (Team 26).
+  Grey boxes only: layout, hierarchy and states, no visual design.
+  The PNGs next to this file are rendered from it, one per screen.
+-->
+<style>
+  :root { --ink:#3a3a3a; --line:#9a9a9a; --soft:#e6e6e6; --fill:#f3f3f3; --note:#b54a1a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: var(--ink); font: 13px/1.35 "Segoe UI", Arial, sans-serif; }
+  .frame { width: 1280px; padding: 28px; background: #fff; }
+  .frame.phone-sheet { width: 1280px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .caption { color: #777; margin: 0 0 18px; font-size: 12px; }
+  .app { display: grid; grid-template-columns: 190px 1fr; border: 2px solid var(--ink); border-radius: 6px; min-height: 680px; }
+  .side { border-right: 2px solid var(--ink); padding: 14px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .brand { height: 26px; background: var(--soft); border-radius: 4px; margin-bottom: 10px; display: flex; align-items: center; padding-left: 8px; font-weight: 700; }
+  .navcap { font-size: 10px; letter-spacing: 1px; color: #888; margin-top: 8px; }
+  .nav { height: 26px; border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; font-size: 12px; }
+  .nav.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .main { display: flex; flex-direction: column; }
+  .top { height: 52px; border-bottom: 2px solid var(--ink); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+  .crumb { color: #777; }
+  .actor { border: 1.5px solid var(--ink); border-radius: 6px; padding: 5px 10px; display: flex; gap: 8px; align-items: center; }
+  .avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--soft); border: 1px solid var(--line); }
+  .content { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .title { font-size: 18px; font-weight: 700; }
+  .sub { color: #777; font-size: 12px; margin-top: -8px; }
+  .row { display: flex; gap: 12px; }
+  .grow { flex: 1; }
+  .box { border: 1.5px solid var(--line); border-radius: 5px; padding: 10px; background: #fff; }
+  .box h3 { margin: 0 0 8px; font-size: 13px; }
+  .fill { background: var(--fill); }
+  .stat { flex: 1; border: 1.5px solid var(--line); border-radius: 5px; padding: 10px; }
+  .stat b { display: block; font-size: 18px; margin-top: 6px; }
+  .input { height: 30px; border: 1.5px solid var(--line); border-radius: 4px; padding: 6px 8px; color: #888; font-size: 12px; }
+  .btn { display: inline-block; height: 30px; border: 1.5px solid var(--ink); border-radius: 4px; padding: 6px 12px; font-size: 12px; font-weight: 600; }
+  .btn.primary { background: var(--ink); color: #fff; }
+  .chip { display: inline-block; border: 1px solid var(--line); border-radius: 12px; padding: 3px 10px; font-size: 11px; margin-right: 6px; }
+  .tabs { display: flex; gap: 8px; }
+  .tab { border: 1.5px solid var(--line); border-radius: 4px; padding: 5px 12px; }
+  .tab.on { border-color: var(--ink); font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; font-size: 10px; letter-spacing: .5px; color: #777; border-bottom: 1.5px solid var(--line); padding: 6px 4px; }
+  td { border-bottom: 1px solid var(--soft); padding: 7px 4px; }
+  .bar { height: 9px; background: var(--soft); border-radius: 2px; }
+  .badge { border: 1px solid var(--ink); border-radius: 3px; padding: 1px 5px; font-size: 10px; }
+  .pager { display: flex; justify-content: space-between; color: #777; font-size: 12px; padding-top: 8px; }
+  .note { color: var(--note); font-size: 11px; font-style: italic; }
+  .note::before { content: "✎ "; }
+  .chart { height: 210px; border: 1.5px dashed var(--line); border-radius: 5px; position: relative; overflow: hidden; }
+  .chart svg { position: absolute; inset: 0; }
+  .map { height: 400px; border: 1.5px solid var(--line); border-radius: 5px; background:
+          repeating-linear-gradient(0deg, #f5f5f5 0 38px, #ececec 38px 40px),
+          repeating-linear-gradient(90deg, transparent 0 38px, #ececec 38px 40px); position: relative; }
+  .circle { position: absolute; left: 50%; top: 50%; width: 300px; height: 300px; margin: -150px; border: 2px dashed var(--ink); border-radius: 50%; }
+  .pin { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); }
+  .pin.origin { width: 18px; height: 18px; background: #fff; border: 4px solid var(--ink); left: calc(50% - 9px); top: calc(50% - 9px); }
+  .drawer { width: 320px; border-left: 2px solid var(--ink); padding: 12px; background: #fff; }
+  .kv { display: flex; justify-content: space-between; border-bottom: 1px solid var(--soft); padding: 6px 0; font-size: 12px; }
+  .state { flex: 1; border: 1.5px dashed var(--line); border-radius: 5px; padding: 12px; text-align: center; color: #666; }
+  .skel { height: 10px; background: var(--soft); border-radius: 3px; margin: 9px 0; }
+  .phones { display: flex; gap: 26px; }
+  .phone { width: 280px; height: 580px; border: 2px solid var(--ink); border-radius: 22px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .phone .top { height: 40px; border: none; border-bottom: 1.5px solid var(--ink); padding: 0; }
+  .legend { margin-top: 14px; display: flex; gap: 18px; font-size: 11px; color: #666; }
+</style>
+</head>
+<body>
+
+<!-- ============================ 1. BROWSE ============================ -->
+<section class="frame" id="browse">
+  <h1>1 · Browse: users, restaurants, orders</h1>
+  <p class="caption">Users: customer, restaurant manager, operations. Server-side pagination (20 rows per page), never the 50,000 rows at once.</p>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">BiteStream</div>
+      <div class="navcap">CUSTOMER</div>
+      <div class="nav on">Browse</div><div class="nav">Place order</div><div class="nav">Wallet history</div>
+      <div class="navcap">OPERATIONS</div>
+      <div class="nav">Analytics</div><div class="nav">Live driver map</div><div class="nav">Reviews &amp; menus</div>
+    </aside>
+    <div class="main">
+      <div class="top"><span class="crumb">BiteStream / <b>Browse</b></span><span class="actor"><span class="avatar"></span>Acting as: Maya Patel · ₹4,550 · ● active order ▾</span></div>
+      <div class="row grow">
+        <div class="content grow">
+          <div class="title">Browse</div><div class="sub">Search customers, restaurants and orders.</div>
+          <div class="row" style="justify-content:space-between">
+            <div class="tabs"><span class="tab on">Orders</span><span class="tab">Customers</span><span class="tab">Restaurants</span></div>
+            <div class="row"><span class="input" style="width:200px">🔍 Search by name</span><span class="input" style="width:150px">All statuses ▾</span></div>
+          </div>
+          <div class="box">
+            <table>
+              <tr><th>ORDER</th><th>CUSTOMER</th><th>RESTAURANT</th><th>AMOUNT</th><th>STATUS</th><th>PLACED</th></tr>
+              <tr><td>#9A3BFA76</td><td>Aarav Brown</td><td>Byte Cafe 101</td><td>₹450.00</td><td><span class="badge">PREPARING</span></td><td>15 Oct 22:14</td></tr>
+              <tr><td>#7C4B68DF</td><td>Sophia Patel</td><td>Tasty Corner 12</td><td>₹1,200.00</td><td><span class="badge">DELIVERING</span></td><td>15 Oct 21:50</td></tr>
+              <tr><td>#2500E2F9</td><td>Zoe Fernando</td><td>Urban Bites 77</td><td>₹830.10</td><td><span class="badge">DELIVERED</span></td><td>15 Oct 21:02</td></tr>
+              <tr><td colspan="6"><div class="skel"></div><div class="skel" style="width:80%"></div></td></tr>
+            </table>
+            <div class="pager"><span>Showing 1–20 of 50,005</span><span>‹ Page 1 of 2,501 ›</span></div>
+          </div>
+          <div class="note">Row click → detail drawer. Filters and page number are kept in the URL (#/browse?tab=orders&amp;status=…&amp;page=…).</div>
+          <div class="row">
+            <div class="state">Loading: skeleton rows</div>
+            <div class="state">Empty: “No customers match ‘xyz’”</div>
+            <div class="state">Error: banner + Retry</div>
+          </div>
+        </div>
+        <aside class="drawer">
+          <h3>Order #9A3BFA76 ✕</h3>
+          <div class="kv"><span>Status</span><span class="badge">PREPARING</span></div>
+          <div class="kv"><span>Amount</span><b>₹450.00</b></div>
+          <div class="kv"><span>Customer</span><u>Aarav Brown</u></div>
+          <div class="kv"><span>Restaurant</span><u>Byte Cafe 101</u></div>
+          <div class="kv"><span>Placed</span><span>15 Oct 22:14</span></div>
+          <p><span class="btn primary">» Advance to DELIVERING</span></p>
+          <div class="note">Calls sp_advance_order_status: PREPARING → DELIVERING → DELIVERED. Lets us demonstrate the partial unique index.</div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 2. PLACE ORDER ============================ -->
+<section class="frame" id="order">
+  <h1>2 · Place order (Workflow 1: sp_execute_checkout)</h1>
+  <p class="caption">User: customer. Wallet before/after, friendly failure reasons, and the wallet_audit_logs row written by the trigger.</p>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">BiteStream</div>
+      <div class="navcap">CUSTOMER</div>
+      <div class="nav">Browse</div><div class="nav on">Place order</div><div class="nav">Wallet history</div>
+      <div class="navcap">OPERATIONS</div>
+      <div class="nav">Analytics</div><div class="nav">Live driver map</div><div class="nav">Reviews &amp; menus</div>
+    </aside>
+    <div class="main">
+      <div class="top"><span class="crumb">BiteStream / <b>Place order</b></span><span class="actor"><span class="avatar"></span>Acting as: Aarav Brown · ₹22,598 ▾</span></div>
+      <div class="content">
+        <div class="title">Place an order</div><div class="sub">Pays from the customer’s wallet with sp_execute_checkout.</div>
+        <div class="row">
+          <div class="box" style="width:46%">
+            <h3>New order</h3>
+            <p>Customer<br><span class="input" style="display:block">Aarav Brown (change via “Acting as”)</span></p>
+            <p>Restaurant<br><span class="input" style="display:block">🏪 Search restaurants ▾</span></p>
+            <p>Amount (₹)<br><span class="input" style="display:block">450.00</span></p>
+            <p><span class="chip">₹250</span><span class="chip">₹450</span><span class="chip">₹1,200</span><span class="chip">More than the wallet</span></p>
+            <div class="box fill"><b>⚠ Aarav already has an order in progress</b><br>Byte Cafe 101 · ₹450 · PREPARING<br><span class="btn">» Advance to DELIVERING</span></div>
+            <p><span class="btn primary">Place order</span></p>
+          </div>
+          <div class="grow" style="display:flex;flex-direction:column;gap:12px">
+            <div class="row"><div class="stat">Wallet before<b>₹22,598.47</b></div><div class="stat">Wallet after<b>₹22,148.47</b><small>₹450.00 charged</small></div></div>
+            <div class="box">
+              <h3>Order placed &nbsp;<span class="badge">PAID</span></h3>
+              <div class="kv"><span>Order</span><span>#9A3BFA76</span></div>
+              <div class="kv"><span>Status</span><span class="badge">PREPARING</span></div>
+              <h3 style="margin-top:10px">New wallet_audit_logs entry (written by trigger wallet_balance_audit)</h3>
+              <table><tr><th>TIME</th><th>ACTION</th><th>AMOUNT</th><th>BALANCE AFTER</th></tr>
+                <tr><td>15 Oct 22:14</td><td><span class="badge">DEBIT</span></td><td>₹450.00</td><td>₹22,148.47</td></tr></table>
+            </div>
+            <div class="row">
+              <div class="state"><b>VOID: Not enough money</b><br>“Wallet has ₹120 but the order costs ₹450. Nothing was charged.”</div>
+              <div class="state"><b>VOID: Order already in progress</b><br>Partial unique index; button: Advance that order</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 3. WALLET HISTORY ============================ -->
+<section class="frame" id="wallet">
+  <h1>3 · Wallet history (Audit trail, read only)</h1>
+  <p class="caption">User: customer. wallet_audit_logs for one user, date filter, running balance (window function) next to the trigger’s balance_after.</p>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">BiteStream</div>
+      <div class="navcap">CUSTOMER</div>
+      <div class="nav">Browse</div><div class="nav">Place order</div><div class="nav on">Wallet history</div>
+      <div class="navcap">OPERATIONS</div>
+      <div class="nav">Analytics</div><div class="nav">Live driver map</div><div class="nav">Reviews &amp; menus</div>
+    </aside>
+    <div class="main">
+      <div class="top"><span class="crumb">BiteStream / <b>Wallet history</b></span><span class="actor"><span class="avatar"></span>Acting as: Aarav Brown ▾</span></div>
+      <div class="content">
+        <div class="title">Wallet history</div><div class="sub">Every change recorded in wallet_audit_logs for Aarav Brown.</div>
+        <div class="row" style="align-items:end"><span>From<br><span class="input" style="display:inline-block;width:150px">01-10-2026 📅</span></span><span>To<br><span class="input" style="display:inline-block;width:150px">15-10-2026 📅</span></span><span class="btn primary">Apply</span><span class="btn">Clear dates</span></div>
+        <div class="row"><div class="stat">Opening balance<b>₹42,465.00</b></div><div class="stat">Debits<b>₹6,149.52</b></div><div class="stat">Credits<b>₹70,581.87</b></div><div class="stat">Closing balance<b>₹22,148.47</b><small>12 entries in range</small></div></div>
+        <div class="box">
+          <table>
+            <tr><th>TIME</th><th>ACTION</th><th>AMOUNT</th><th>BALANCE AFTER (TRIGGER)</th><th>RUNNING BALANCE (WINDOW)</th></tr>
+            <tr><td>15 Oct 22:14</td><td><span class="badge">DEBIT</span></td><td>−₹450.00</td><td>₹22,148.47</td><td>₹22,148.47 ✓</td></tr>
+            <tr><td>14 Oct 09:41</td><td><span class="badge">CREDIT</span></td><td>+₹5,680.68</td><td>₹22,598.47</td><td>₹22,598.47 ✓</td></tr>
+            <tr><td>12 Oct 18:03</td><td><span class="badge">DEBIT</span></td><td>−₹5,210.70</td><td>₹16,917.79</td><td>₹16,917.79 ✓</td></tr>
+          </table>
+          <div class="pager"><span>Showing 1–20 of 41</span><span>‹ Page 1 of 3 ›</span></div>
+        </div>
+        <div class="note">Read only: no edit or delete. Empty range → “No wallet activity in this date range”.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 4. ANALYTICS ============================ -->
+<section class="frame" id="analytics">
+  <h1>4 · Analytics (Workflow 2 + materialized view)</h1>
+  <p class="caption">User: restaurant manager. 7-day moving average per restaurant, DENSE_RANK ranking, materialized-view totals with “last refreshed” and Refresh.</p>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">BiteStream</div>
+      <div class="navcap">CUSTOMER</div>
+      <div class="nav">Browse</div><div class="nav">Place order</div><div class="nav">Wallet history</div>
+      <div class="navcap">OPERATIONS</div>
+      <div class="nav on">Analytics</div><div class="nav">Live driver map</div><div class="nav">Reviews &amp; menus</div>
+    </aside>
+    <div class="main">
+      <div class="top"><span class="crumb">BiteStream / <b>Analytics</b></span><span class="actor"><span class="avatar"></span>Acting as ▾</span></div>
+      <div class="content">
+        <div class="title">Analytics</div>
+        <div class="row"><div class="stat">Completed revenue<b>₹24.5 Cr</b></div><div class="stat">Completed orders<b>47,931</b></div><div class="stat">Restaurants<b>500</b></div><div class="stat">Avg order value<b>₹5,127</b></div></div>
+        <div class="row" style="justify-content:space-between;align-items:center"><span>Last refreshed: <b>15 Oct 2026, 22:10:04</b> (stored in the view)</span><span class="btn primary">⟳ Refresh materialized view</span></div>
+        <div class="row">
+          <div class="box grow">
+            <h3>7-day moving average · <span class="input" style="display:inline-block;width:220px">Fresh Feast 874 ▾</span></h3>
+            <div class="chart"><svg viewBox="0 0 600 210" preserveAspectRatio="none">
+              <g fill="#e2e2e2">
+                <rect x="10" y="120" width="14" height="90"/><rect x="30" y="90" width="14" height="120"/><rect x="50" y="140" width="14" height="70"/><rect x="70" y="60" width="14" height="150"/><rect x="90" y="110" width="14" height="100"/><rect x="110" y="80" width="14" height="130"/><rect x="130" y="130" width="14" height="80"/><rect x="150" y="70" width="14" height="140"/><rect x="170" y="100" width="14" height="110"/><rect x="190" y="50" width="14" height="160"/><rect x="210" y="120" width="14" height="90"/><rect x="230" y="85" width="14" height="125"/><rect x="250" y="95" width="14" height="115"/><rect x="270" y="65" width="14" height="145"/><rect x="290" y="115" width="14" height="95"/><rect x="310" y="75" width="14" height="135"/><rect x="330" y="100" width="14" height="110"/><rect x="350" y="55" width="14" height="155"/><rect x="370" y="125" width="14" height="85"/><rect x="390" y="90" width="14" height="120"/><rect x="410" y="70" width="14" height="140"/><rect x="430" y="105" width="14" height="105"/><rect x="450" y="60" width="14" height="150"/><rect x="470" y="95" width="14" height="115"/><rect x="490" y="80" width="14" height="130"/><rect x="510" y="110" width="14" height="100"/><rect x="530" y="50" width="14" height="160"/><rect x="550" y="85" width="14" height="125"/><rect x="570" y="70" width="14" height="140"/>
+              </g>
+              <polyline fill="none" stroke="#3a3a3a" stroke-width="3" points="17,120 37,110 57,115 77,100 97,100 117,98 137,100 157,95 177,96 197,90 217,92 237,90 257,94 277,88 297,92 317,88 337,90 357,84 377,90 397,88 417,84 437,86 457,80 477,84 497,82 517,86 537,78 557,80 577,78"/>
+            </svg></div>
+            <div class="legend"><span>▮ daily revenue (DELIVERED)</span><span>— 7-day moving average (ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)</span></div>
+          </div>
+          <div class="box" style="width:40%">
+            <h3>Ranking: DENSE_RANK by latest 7-day average</h3>
+            <table><tr><th>RANK</th><th>RESTAURANT</th><th>DAILY</th><th>7-DAY AVG</th></tr>
+              <tr><td>🥇 1</td><td>Fresh Feast 874</td><td>₹42,100</td><td>₹24,740</td></tr>
+              <tr><td>🥈 2</td><td>The Food Hub 686</td><td>₹38,900</td><td>₹22,948</td></tr>
+              <tr><td>🥉 3</td><td>Spice Garden 777</td><td>₹30,120</td><td>₹22,797</td></tr>
+              <tr><td>4</td><td>Urban Bites 77</td><td>₹21,005</td><td>₹21,550</td></tr></table>
+            <div class="pager"><span>1–20 of 500</span><span>‹ › </span></div>
+            <div class="note">Click a row to chart that restaurant.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 5. MAP ============================ -->
+<section class="frame" id="map">
+  <h1>5 · Live driver map (Workflow 3: $geoNear)</h1>
+  <p class="caption">User: operations / dispatch. Selectable origin (restaurant or map click), 5 km radius, drivers sorted by distance, polling without a page reload.</p>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">BiteStream</div>
+      <div class="navcap">CUSTOMER</div>
+      <div class="nav">Browse</div><div class="nav">Place order</div><div class="nav">Wallet history</div>
+      <div class="navcap">OPERATIONS</div>
+      <div class="nav">Analytics</div><div class="nav on">Live driver map</div><div class="nav">Reviews &amp; menus</div>
+    </aside>
+    <div class="main">
+      <div class="top"><span class="crumb">BiteStream / <b>Live driver map</b></span><span class="actor"><span class="avatar"></span>Acting as ▾</span></div>
+      <div class="content">
+        <div class="title">Live driver map</div>
+        <div class="row" style="align-items:end"><span>Origin restaurant<br><span class="input" style="display:inline-block;width:260px">🏪 Byte Cafe 101 ▾</span></span><span class="chip">📍 5 km radius</span><span class="chip">☑ Live updates ●</span><span class="btn">⟳ Refresh now</span></div>
+        <div class="row">
+          <div class="box" style="width:30%">
+            <h3>20 nearest active drivers</h3>
+            <div class="kv"><span>1 · Driver #1463</span><b>27 m</b></div>
+            <div class="kv"><span>2 · Driver #812</span><b>310 m</b></div>
+            <div class="kv"><span>3 · Driver #77</span><b>690 m</b></div>
+            <div class="kv"><span>4 · Driver #2051</span><b>1.2 km</b></div>
+            <div class="kv"><span>…</span><span></span></div>
+            <div class="kv"><span>20 · Driver #5</span><b>4.8 km</b></div>
+            <p class="note">Updated 22:14:35 · every 10 s. One row per driver. Click a slip → map flies to that driver.</p>
+          </div>
+          <div class="map grow">
+            <div class="circle"></div><div class="pin origin"></div>
+            <div class="pin" style="left:52%;top:47%"></div><div class="pin" style="left:43%;top:58%"></div><div class="pin" style="left:60%;top:40%"></div>
+            <div class="pin" style="left:38%;top:35%"></div><div class="pin" style="left:63%;top:62%"></div><div class="pin" style="left:47%;top:30%"></div>
+            <div class="pin" style="left:56%;top:69%"></div><div class="pin" style="left:35%;top:52%"></div>
+          </div>
+        </div>
+        <div class="row"><div class="state">Empty: “No active drivers within 5 km right now”</div><div class="state">Click the map: search around that point</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 6. REVIEWS & MENUS ============================ -->
+<section class="frame" id="reviews">
+  <h1>6 · Reviews &amp; menus (Workflow 4: $facet + Menus catalog)</h1>
+  <p class="caption">User: restaurant manager. Rating distribution, top tags, average rating, and one flexible menu document shown readably.</p>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">BiteStream</div>
+      <div class="navcap">CUSTOMER</div>
+      <div class="nav">Browse</div><div class="nav">Place order</div><div class="nav">Wallet history</div>
+      <div class="navcap">OPERATIONS</div>
+      <div class="nav">Analytics</div><div class="nav">Live driver map</div><div class="nav on">Reviews &amp; menus</div>
+    </aside>
+    <div class="main">
+      <div class="top"><span class="crumb">BiteStream / <b>Reviews &amp; menus</b></span><span class="actor"><span class="avatar"></span>Acting as ▾</span></div>
+      <div class="content">
+        <div class="title">Reviews &amp; menus</div>
+        <div class="row"><span>Restaurant <span class="input" style="display:inline-block;width:260px">All restaurants ▾</span></span></div>
+        <div class="row">
+          <div class="stat" style="max-width:210px">Average rating<b>★ 3.62</b><small>50,000 reviews</small></div>
+          <div class="box grow"><h3>Rating distribution</h3>
+            <div class="row" style="align-items:center"><span>5★</span><div class="bar grow" style="max-width:80%"></div><span>14,210</span></div>
+            <div class="row" style="align-items:center"><span>4★</span><div class="bar grow" style="max-width:65%"></div><span>12,005</span></div>
+            <div class="row" style="align-items:center"><span>3★</span><div class="bar grow" style="max-width:50%"></div><span>10,950</span></div>
+            <div class="row" style="align-items:center"><span>2★</span><div class="bar grow" style="max-width:35%"></div><span>7,402</span></div>
+            <div class="row" style="align-items:center"><span>1★</span><div class="bar grow" style="max-width:25%"></div><span>5,433</span></div>
+          </div>
+          <div class="box grow"><h3>Top tags</h3>
+            <div class="row" style="align-items:center"><span style="width:90px">tasty</span><div class="bar grow"></div></div>
+            <div class="row" style="align-items:center"><span style="width:90px">fresh</span><div class="bar grow" style="max-width:85%"></div></div>
+            <div class="row" style="align-items:center"><span style="width:90px">fast-delivery</span><div class="bar grow" style="max-width:70%"></div></div>
+            <div class="row" style="align-items:center"><span style="width:90px">slow-delivery</span><div class="bar grow" style="max-width:45%"></div></div>
+          </div>
+        </div>
+        <div class="box">
+          <h3>Menu: Byte Cafe 101 (Menus document)</h3>
+          <div class="kv"><b>▾ Main course</b><span></span></div>
+          <div class="kv"><span>Paneer Biryani · · · · · · · · · · · · · · · · · · · ·</span><b>₹220</b></div>
+          <div class="kv"><span style="padding-left:18px;color:#777">+ Extra paneer ₹50 · + Extra spicy ₹0 · 🌶 spice level 2 · veg</span><span></span></div>
+          <div class="kv"><b>▸ Combos</b><span></span></div>
+          <div class="note">Optional fields (add-ons, dietary tags, spice level) only appear when the document has them: the flexible schema.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 7. PHONE ============================ -->
+<section class="frame phone-sheet" id="phone">
+  <h1>7 · Phone layout (390 px)</h1>
+  <p class="caption">Sidebar becomes a burger drawer; cards stack; tables scroll sideways inside their card; the map list moves below the map. No horizontal page scroll.</p>
+  <div class="phones">
+    <div class="phone">
+      <div class="top"><span>☰ <b>Browse</b></span><span class="avatar"></span></div>
+      <div class="tabs"><span class="tab on">Orders</span><span class="tab">Customers</span></div>
+      <span class="input">All statuses ▾</span>
+      <div class="box"><table><tr><th>ORDER</th><th>CUSTOMER</th><th>REST… →</th></tr><tr><td>#9A3B…</td><td>Aarav</td><td>Byte…</td></tr><tr><td>#7C4B…</td><td>Sophia</td><td>Tasty…</td></tr><tr><td>#2500…</td><td>Zoe</td><td>Urban…</td></tr></table></div>
+      <div class="pager"><span>1–20 of 50,005</span><span>‹ ›</span></div>
+    </div>
+    <div class="phone">
+      <div class="top"><span>☰ <b>Place order</b></span><span class="avatar"></span></div>
+      <span class="input">🏪 Restaurant ▾</span><span class="input">Amount ₹</span>
+      <span class="btn primary" style="align-self:start">Place order</span>
+      <div class="row"><div class="stat">Before<b>₹22,598</b></div><div class="stat">After<b>₹22,148</b></div></div>
+      <div class="box"><b>Order placed <span class="badge">PAID</span></b><br>DEBIT ₹450 · balance ₹22,148</div>
+    </div>
+    <div class="phone">
+      <div class="top"><span>☰ <b>Live driver map</b></span><span class="avatar"></span></div>
+      <span class="input">🏪 Byte Cafe 101 ▾</span>
+      <div class="map" style="height:220px"><div class="circle" style="width:150px;height:150px;margin:-75px"></div><div class="pin origin"></div><div class="pin" style="left:40%;top:40%"></div><div class="pin" style="left:60%;top:55%"></div></div>
+      <div class="kv"><span>1 · Driver #1463</span><b>27 m</b></div><div class="kv"><span>2 · Driver #812</span><b>310 m</b></div>
+    </div>
+    <div class="phone">
+      <div class="top"><span>✕ <b>Menu</b></span></div>
+      <div class="navcap">CUSTOMER</div><div class="nav on">Browse</div><div class="nav">Place order</div><div class="nav">Wallet history</div>
+      <div class="navcap">OPERATIONS</div><div class="nav">Analytics</div><div class="nav">Live driver map</div><div class="nav">Reviews &amp; menus</div>
+      <div class="note">Burger drawer</div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

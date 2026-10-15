@@ -15,14 +15,15 @@ A web front end for the inherited **BiteStream** food-delivery backend (PostgreS
 ## Contents
 
 1. [Screens](#1-screens)
-2. [Running it](#2-running-it)
-3. [Tech choices](#3-tech-choices)
-4. [How each screen is wired to the database](#4-how-each-screen-is-wired-to-the-database)
-5. [Tests](#5-tests)
-6. [Assumptions](#6-assumptions)
-7. [Changes to the inherited scripts](#7-changes-to-the-inherited-scripts)
-8. [Project structure](#8-project-structure)
-9. [Team and contributions](#9-team-and-contributions)
+2. [Users and design](#2-users-and-design)
+3. [Running it](#3-running-it)
+4. [Tech choices](#4-tech-choices)
+5. [How each screen is wired to the database](#5-how-each-screen-is-wired-to-the-database)
+6. [Tests](#6-tests)
+7. [Assumptions](#7-assumptions)
+8. [Changes to the inherited scripts](#8-changes-to-the-inherited-scripts)
+9. [Project structure](#9-project-structure)
+10. [Team and contributions](#10-team-and-contributions)
 
 ---
 
@@ -34,7 +35,7 @@ A web front end for the inherited **BiteStream** food-delivery backend (PostgreS
 | 2 | **Place order** (Workflow 1) | `#/order` | Calls `sp_execute_checkout`. Shows the wallet before/after, a friendly reason when the order is refused (insufficient balance, or an order already in progress) and the new `wallet_audit_logs` row written by the trigger |
 | 3 | **Wallet history** (Audit) | `#/wallet` | Read-only `wallet_audit_logs` for one customer, with a date filter, opening/closing totals and a running balance |
 | 4 | **Analytics** (Workflow 2 + materialized view) | `#/analytics` | Per-restaurant chart of 30 days of daily revenue with the 7-day moving average; paginated `DENSE_RANK()` ranking (click a row to chart it); materialized-view totals with a stored "last refreshed" time and a Refresh button |
-| 5 | **Live driver map** (Workflow 3) | `#/map` | `$geoNear` around a real restaurant (or any point clicked on the map), 5 km radius, one row per driver sorted by distance, polling every 10 s |
+| 5 | **Live driver map** (Workflow 3) | `#/map` | `$geoNear` around a real restaurant (or any point clicked on the map), 5 km radius, one row per driver sorted by distance, polling every 10 s; a ping simulator sends fresh pings on each poll so drivers move and the 2-hour TTL never empties the map |
 | 6 | **Reviews & menus** (Workflow 4) | `#/reviews` | `$facet` rating distribution, top tags and average rating for one restaurant or all of them, plus that restaurant's `Menus` document as an accordion (category → items → add-ons) |
 
 **Demo user switching:** the header's **"Acting as"** picker chooses the customer (no login). It shows their wallet balance and whether they have an active order, and the choice is remembered across reloads.
@@ -53,7 +54,28 @@ A web front end for the inherited **BiteStream** food-delivery backend (PostgreS
 
 <img src="docs/screenshots/browse_mobile.png" alt="Browse on a phone" width="220"> <img src="docs/screenshots/analytics_mobile.png" alt="Analytics on a phone" width="220"> <img src="docs/screenshots/nav_drawer_mobile.png" alt="Navigation drawer on a phone" width="220"> <img src="docs/screenshots/reviews_mobile.png" alt="Reviews and menu on a phone" width="220">
 
-## 2. Running it
+## 2. Users and design
+
+**Who uses BiteStream** (details: [docs/design/users.md](docs/design/users.md)):
+
+| User | Wants to | Screens |
+|---|---|---|
+| **Customer** | Find a restaurant, pay from the prepaid wallet, understand why an order was refused, check every debit and credit | Browse, Place order, Wallet history, Reviews & menus |
+| **Restaurant manager** | See the revenue trend and rank, refresh the totals, read what customers say, check the menu, move orders forward | Analytics, Reviews & menus, Browse (orders) |
+| **Operations / dispatch** | See the nearest active drivers around a restaurant, live; investigate customers and orders | Live driver map, Browse |
+
+**Wireframes** (drawn before building; source: [docs/design/wireframes/wireframes.html](docs/design/wireframes/wireframes.html), first-pass notes: [docs/design/wireframes.md](docs/design/wireframes.md)):
+
+| | | |
+|---|---|---|
+| ![Browse](docs/design/wireframes/01_browse.png) | ![Place order](docs/design/wireframes/02_place_order.png) | ![Wallet history](docs/design/wireframes/03_wallet_history.png) |
+| ![Analytics](docs/design/wireframes/04_analytics.png) | ![Driver map](docs/design/wireframes/05_driver_map.png) | ![Reviews & menus](docs/design/wireframes/06_reviews_menus.png) |
+
+![Phone layout](docs/design/wireframes/07_phone_layout.png)
+
+**Consistent look:** one token file ([web/src/theme.css](web/src/theme.css)) for colours, type and spacing, and a small set of reusable components: `Panel`, `StatCard`, table styles, `StatusBadge` / `ActionBadge`, `Pagination`, `Drawer`, `EmptyState`, `ErrorBanner`, `SkeletonRows`, `RestaurantPicker` and `ActorPicker`. See the [style guide](docs/design/style_guide.md).
+
+## 3. Running it
 
 ### Prerequisites
 
@@ -66,7 +88,21 @@ A web front end for the inherited **BiteStream** food-delivery backend (PostgreS
 
 ### Option A: local databases (tested)
 
-Run all commands from the repository root.
+Run all commands from the repository root. PostgreSQL and MongoDB must be running.
+
+**Quick setup (one command).** This creates the database and runs every SQL script, both seeders and the MongoDB indexes (about 1 minute). It needs only Python, not `psql` or `mongosh`:
+
+```bash
+python -m pip install -r data_generation/requirements.txt
+
+# macOS / Linux
+DB_PASSWORD=your_postgres_password python data_generation/setup_database.py
+
+# Windows PowerShell
+$env:DB_PASSWORD="your_postgres_password"; py data_generation/setup_database.py
+```
+
+Then continue with steps 3 and 4 below. Steps 1–2 do the same thing by hand.
 
 **1. PostgreSQL schema.** Create an empty database called `bitestream`, then run the scripts in order. All of them are safe to re-run.
 
@@ -104,7 +140,7 @@ Then create the MongoDB indexes:
 mongosh BiteStream mongo/01_collections_and_indexes.js
 ```
 
-> Driver pings expire after 2 hours (TTL index from Assignment 1). If the map is empty, re-run `mongo_seeder.py`.
+> Driver pings expire after 2 hours (TTL index from Assignment 1). While "Live updates" is on, the map page sends fresh pings for the drivers around the origin, so it does not empty during a demo. After a long break, re-running `mongo_seeder.py` restores the full set.
 
 **3. API** (terminal 1)
 
@@ -144,7 +180,7 @@ Then start the API and web app as in steps 3–4 (`DATABASE_URL=postgresql://pos
 7. **Wallet history**: filter today's date, check the running balance against balance after.
 8. **Analytics**, **Live driver map**, **Reviews & menus**.
 
-## 3. Tech choices
+## 4. Tech choices
 
 | Layer | Choice | Why |
 |---|---|---|
@@ -162,7 +198,7 @@ The database does the real work, as the assignment asks. The API never re-implem
 
 Everything used is free and open source.
 
-## 4. How each screen is wired to the database
+## 5. How each screen is wired to the database
 
 | Screen | Endpoint(s) | Database object(s) |
 |---|---|---|
@@ -171,7 +207,7 @@ Everything used is free and open source.
 | Order status | `PATCH /orders/:id/advance` | `sp_advance_order_status` (new) |
 | Wallet history | `GET /users/:id/audit` | `wallet_audit_logs`, index `idx_wallet_audit_user_ts` (new), window `SUM() OVER (ORDER BY timestamp)` |
 | Analytics | `GET /analytics/*`, `POST /analytics/refresh` | Workflow 2 window query (`AVG … ROWS BETWEEN 6 PRECEDING`, `DENSE_RANK()`), `restaurant_completed_revenue`, `refresh_restaurant_completed_revenue()` |
-| Map | `GET /map/nearby` | `DriverPings` `$geoNear` + `2dsphere` index |
+| Map | `GET /map/nearby`, `POST /map/simulate-pings` | `DriverPings` `$geoNear` + `2dsphere` index; TTL index on `created_at` |
 | Reviews & menus | `GET /reviews/analytics`, `/reviews/menus` | `Reviews` `$facet`, `Menus` |
 
 **Loading, empty and error states:**
@@ -180,14 +216,14 @@ Everything used is free and open source.
 - Failed requests show an error banner with **Retry**.
 - A global banner appears if the API is unreachable, and the sidebar shows the API status.
 
-## 5. Tests
+## 6. Tests
 
 ```bash
 cd api
 npm test
 ```
 
-There are 23 integration tests: 14 in `api/test/transaction.test.js` and 9 in `api/test/analytics_map_reviews.test.js`. They run against the seeded PostgreSQL and MongoDB databases, because the behaviour under test lives in the databases:
+There are 24 integration tests: 14 in `api/test/transaction.test.js` and 10 in `api/test/analytics_map_reviews.test.js`. They run against the seeded PostgreSQL and MongoDB databases, because the behaviour under test lives in the databases:
 
 | Area | Cases |
 |---|---|
@@ -195,14 +231,14 @@ There are 23 integration tests: 14 in `api/test/transaction.test.js` and 9 in `a
 | Browse | server-side pagination, page-size cap, search + filter |
 | Audit | running balance equals `balance_after` for every row; date range filtering; inclusive end date; inverted range rejected |
 | Workflow 2 | the last day's 7-day average equals an independent SQL average of that day and the 6 before it; rankings paginated and `DENSE_RANK` never decreases; `REFRESH` moves `refreshed_at` forward; malformed (400) and unknown (404) restaurant |
-| Workflow 3 | one row per driver, sorted by distance, all within 5 km, at most 20; a far-away origin returns an empty list |
+| Workflow 3 | one row per driver, sorted by distance, all within 5 km, at most 20; a far-away origin returns an empty list; the ping simulator's new pings are returned by the next `$geoNear` query |
 | Workflow 4 | rating counts add up to the review total; the restaurant filter narrows the `$facet`; menu found / 404 `MENU_NOT_FOUND` / 400 for a malformed id |
 
 We focused the tests on the transaction path because it is where money moves and where the inherited code was broken. The tests place a few real orders for one customer and deliver them afterwards, so the data stays consistent.
 
 We also checked every screen manually in Chrome at 1440 px and 390 px wide (no horizontal page scroll on phones).
 
-## 6. Assumptions
+## 7. Assumptions
 
 1. **No authentication.** The PDF says real login is not required. Anyone using the app can act as any customer through the "Acting as" picker.
 2. **Currency is INR (₹)**, with two decimals, matching `DECIMAL(10,2)`.
@@ -217,7 +253,7 @@ We also checked every screen manually in Chrome at 1440 px and 390 px wide (no h
 9. **Running balance** is computed with a window function and shown next to the trigger's stored `balance_after`, so the two can be compared. They match on all seed and app-generated data.
 10. Assumptions made by the original team are kept and listed in [docs/part_a_README.md](docs/part_a_README.md#7-assumptions).
 
-## 7. Changes to the inherited scripts
+## 8. Changes to the inherited scripts
 
 Every change is marked `[Team 26]` in the code. The full reasoning and evidence are in [docs/handover_note.md](docs/handover_note.md).
 
@@ -235,7 +271,7 @@ Every change is marked `[Team 26]` in the code. The full reasoning and evidence 
 | `data_generation/mongo_seeder.py` | Reads restaurants from PostgreSQL: `Reviews`/`Menus` use the restaurant UUID; one menu per restaurant with optional add-ons, dietary tags, spice level and combos; ratings and tags vary by restaurant; `random.seed(42)`. Driver pings unchanged | Integer ids 1–100 matched no restaurant and there were only 2 menus; uniform random reviews made every chart bar equal |
 | `sql/06_window_analytics.sql` | Unchanged. The API reuses steps 1–4 for one restaurant's 30-day series and the full query (paginated) for the ranking | The original returns only the latest day per restaurant, which cannot be charted over time |
 
-## 8. Project structure
+## 9. Project structure
 
 ```text
 .
@@ -244,12 +280,13 @@ Every change is marked `[Team 26]` in the code. The full reasoning and evidence 
 ├── docs/
 │   ├── handover_note.md      # what we inherited, what was broken, what we changed
 │   ├── api_endpoints.md      # API contract
-│   ├── design/               # users, wireframes, style guide
+│   ├── design/               # users.md, wireframes/ (PNGs + HTML source), style guide, design specs
 │   ├── screenshots/
 │   ├── team/                 # work split and per-member PRDs
 │   ├── part_a_README.md      # original Assignment 1 README
 │   ├── mongo_schema_map.json, relational_erd.png
 ├── sql/  mongo/  data_generation/  performance/    # Assignment 1 (+ our fixes)
+│                             # data_generation/setup_database.py: one-command database setup
 ├── api/                      # Express API
 │   ├── src/app.js            # routes + error handling (imported by tests)
 │   ├── src/server.js         # starts the server
@@ -269,7 +306,7 @@ Every change is marked `[Team 26]` in the code. The full reasoning and evidence 
         └── router.js         # hash routing
 ```
 
-## 9. Team and contributions
+## 10. Team and contributions
 
 Team 26. The allocation sheet lists four members; **Jyotiraditya Kumar is no longer at the college and did not take part**.
 

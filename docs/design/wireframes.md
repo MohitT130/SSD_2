@@ -1,6 +1,6 @@
 # Wireframes (low fidelity)
 
-Text wireframes for every screen. The designer redraws these in Excalidraw/Figma and exports PNGs into this folder (`01_layout.png`, `02_browse.png`, …).
+Rendered wireframes, one PNG per screen, are in [wireframes/](wireframes/) (`01_browse.png` … `07_phone_layout.png`, drawn from [wireframes/wireframes.html](wireframes/wireframes.html)). The text sketches below were the first pass, written before any code.
 
 ## 0. Layout (every screen)
 
