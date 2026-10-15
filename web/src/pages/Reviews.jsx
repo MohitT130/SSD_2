@@ -88,8 +88,18 @@ export default function Reviews() {
           <h1>Reviews &amp; menus</h1>
           <p className="page-description">Ratings and tags from a <code>$facet</code> pipeline over <code>Reviews</code>, and the restaurant's menu from the flexible <code>Menus</code> catalog.</p>
         </div>
-        {facets && (
-          <div className="rating-pill"><Star size={16} fill="currentColor" /> {Number(facets.averageRating).toFixed(2)} average · {scopeLabel}</div>
+        {facets && facets.totalReviews > 0 && (
+          <div className="score-block" aria-label={`Average rating ${Number(facets.averageRating).toFixed(2)} out of 5 for ${scopeLabel}`}>
+            <span className="score">{Number(facets.averageRating).toFixed(1)}</span>
+            <span className="score-side">
+              <span className="score-stars" aria-hidden="true">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star key={n} size={15} fill={n <= Math.round(facets.averageRating) ? 'currentColor' : 'none'} />
+                ))}
+              </span>
+              <span className="score-caption">{Number(facets.totalReviews).toLocaleString('en-IN')} reviews · {scopeLabel}</span>
+            </span>
+          </div>
         )}
       </div>
 
@@ -107,7 +117,7 @@ export default function Reviews() {
 
       <div className="stats-grid">
         <StatCard label="Average rating" value={facets ? `★ ${Number(facets.averageRating).toFixed(2)}` : '—'} detail={`Out of 5 · ${scopeLabel}`} icon={Star} />
-        <StatCard label="Reviews" value={facets ? Number(facets.totalReviews).toLocaleString('en-IN') : '—'} detail={scopeLabel} icon={MessageSquare} />
+        <StatCard label="Reviews" value="—" countTo={facets ? Number(facets.totalReviews) : undefined} detail={scopeLabel} icon={MessageSquare} />
         <StatCard label="Most mentioned" value={topTags[0]?.tag ?? '—'} detail={topTags[0] ? `${topTags[0].count.toLocaleString('en-IN')} mentions` : 'No tags yet'} icon={Tag} />
         <StatCard label="Menu items" value={menu ? itemCount : '—'} detail={menu ? `${menu.categories.length} categories` : 'No menu yet'} icon={Utensils} />
       </div>
@@ -158,7 +168,12 @@ export default function Reviews() {
         ) : !categories.length ? (
           <EmptyState icon={Search} title={`Nothing matches “${query}”`} text="Try another dish or category." />
         ) : (
-          <div className="menu-accordion">
+          <div className="menu-accordion menu-print">
+            <header className="menu-print-head">
+              <span className="menu-print-kicker">Menu</span>
+              <strong>{menu.restaurant_name}</strong>
+              <span className="menu-print-kicker">Updated {new Date(menu.updated_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} · {itemCount} dishes</span>
+            </header>
             {categories.map((category) => (
               <details key={category.name} open>
                 <summary><span>{category.name}</span><small>{category.items.length} item{category.items.length === 1 ? '' : 's'}</small></summary>
@@ -166,7 +181,11 @@ export default function Reviews() {
                   {category.items.map((item) => (
                     <li key={item.name} className="menu-item">
                       <div className="menu-item-main">
-                        <strong>{item.name}</strong>
+                        <div className="menu-line">
+                          <strong>{item.name}</strong>
+                          <span className="leader" aria-hidden="true" />
+                          <span className="menu-price">{rupees(item.price)}</span>
+                        </div>
                         {(item.dietary_tags || item.spice_level) && (
                           <span className="menu-badges">
                             {item.dietary_tags?.map((tag) => <span key={tag} className="menu-badge diet">{tag}</span>)}
@@ -182,7 +201,6 @@ export default function Reviews() {
                           </span>
                         )}
                       </div>
-                      <span className="menu-price">{rupees(item.price)}</span>
                     </li>
                   ))}
                 </ul>
