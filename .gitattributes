@@ -1,0 +1,3 @@
+# [Team 26] The demo video is linked from the README but kept out of the
+# submission ZIP (git archive), which must stay under 20 MB.
+docs/demo/*.webm export-ignore
