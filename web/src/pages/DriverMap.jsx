@@ -176,7 +176,7 @@ export default function DriverMap() {
 
         <Panel title="Map" subtitle="OpenStreetMap · click anywhere to move the origin" className="leaflet-panel">
           <div className="leaflet-frame">
-            <MapContainer center={center} zoom={13} scrollWheelZoom className="leaflet-map" ref={setMap}>
+            <MapContainer center={center} zoom={14} scrollWheelZoom className="leaflet-map" ref={setMap}>
               <Recenter center={center} />
               <PickOnClick onPick={({ lat, lng }) => setOrigin({ lat, lng, label: 'pinned location', restaurant: null })} />
               <TileLayer

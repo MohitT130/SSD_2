@@ -86,16 +86,16 @@ Reads the wallet balance, runs `CALL sp_execute_checkout($1, $2, $3)` as a **pla
 
 | Method & path | Returns | DB object |
 |---|---|---|
-| `GET /analytics/moving-average` | `{ data: [ { revenue_date, moving_average_7_day } ] }` | Workflow 2 window query (`sql/06_window_analytics.sql`) |
-| `GET /analytics/rankings` | `{ data: [ { restaurant_id, restaurant_name, order_date, daily_revenue, moving_average_7_day, revenue_rank } ] }` | Workflow 2 query with `DENSE_RANK()` |
-| `GET /analytics/summary` | `{ data: { total_revenue, orders_processed, restaurants, average_order_value, last_refreshed } }` | `restaurant_completed_revenue` |
-| `POST /analytics/refresh` | `{ success, lastRefreshed }` | `CALL refresh_restaurant_completed_revenue()` (`REFRESH … CONCURRENTLY`) |
+| `GET /analytics/moving-average?restaurantId=<uuid>` | `{ data: [ { order_date: 'YYYY-MM-DD', daily_revenue, moving_average_7_day } ] (last 30 days), restaurant: { id, name } }`; 400 `INVALID_ID`, 404 `RESTAURANT_NOT_FOUND` | Workflow 2 steps 1–4 (`sql/06_window_analytics.sql`) for one restaurant |
+| `GET /analytics/rankings?page=&pageSize=` | `{ data: [ { restaurant_id, restaurant_name, order_date, daily_revenue, moving_average_7_day, revenue_rank } ], page, pageSize, total }` | Workflow 2 query with `DENSE_RANK()`, paginated |
+| `GET /analytics/summary` | `{ data: { total_revenue, orders_processed, restaurants, average_order_value, refreshed_at } }` | `restaurant_completed_revenue` (`refreshed_at` column) |
+| `POST /analytics/refresh` | `{ data: { refreshed_at, duration_ms } }` | `CALL refresh_restaurant_completed_revenue()` (`REFRESH … CONCURRENTLY`) |
 
 ## 6. Map — Workflow 3 (`api/src/routes/map.js`)
 
 | Method & path | Query | Returns | DB object |
 |---|---|---|---|
-| `GET /map/nearby` | `lat`, `lng`, `radiusKm` (≤ 5) | `{ origin, radiusKm, data: [ { driver_id, active, location, distanceMeters, created_at } ] }` sorted by distance | MongoDB `DriverPings` `$geoNear` (`2dsphere`), `query: { active: true }` |
+| `GET /map/nearby` | `lat`, `lng`, `radiusKm` (≤ 5) | `{ origin, radiusKm, data: [ { driver_id, location, distanceMeters, created_at } ] }`: one row per driver (latest ping), nearest first, at most 20 | MongoDB `DriverPings` `$geoNear` (`2dsphere`), `query: { active: true }` |
 
 The web app polls this every 10 s so new pings appear without a page reload.
 
@@ -103,8 +103,8 @@ The web app polls this every 10 s so new pings appear without a page reload.
 
 | Method & path | Returns | DB object |
 |---|---|---|
-| `GET /reviews/analytics` | `{ data: { averageRating, totalReviews, distribution[], topTags[], restaurants[] } }` | MongoDB `Reviews` `$facet` |
-| `GET /reviews/menus` | `{ data: [ menu documents ] }` | MongoDB `Menus` |
+| `GET /reviews/analytics?restaurantId=` (optional) | `{ data: { averageRating, totalReviews, distribution[], topTags[], restaurants[] } }`; 400 `INVALID_ID` | MongoDB `Reviews` `$facet` (`$match` on `restaurant_id` first when given) |
+| `GET /reviews/menus?restaurantId=<uuid>` | `{ data: menuDocument }`; 404 `MENU_NOT_FOUND`, 400 `INVALID_ID`. Without `restaurantId`: `{ data: [ up to 100 menus ] }` | MongoDB `Menus` |
 
 ## 8. Misc
 

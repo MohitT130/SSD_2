@@ -33,15 +33,23 @@ A web front end for the inherited **BiteStream** food-delivery backend (PostgreS
 | 1 | **Browse** | `#/browse` | Customers, restaurants and orders with server-side pagination, search, filters and a detail drawer per record; "Advance status" on orders |
 | 2 | **Place order** (Workflow 1) | `#/order` | Calls `sp_execute_checkout`. Shows the wallet before/after, a friendly reason when the order is refused (insufficient balance, or an order already in progress) and the new `wallet_audit_logs` row written by the trigger |
 | 3 | **Wallet history** (Audit) | `#/wallet` | Read-only `wallet_audit_logs` for one customer, with a date filter, opening/closing totals and a running balance |
-| 4 | **Analytics** (Workflow 2 + materialized view) | `#/analytics` | 7-day moving-average revenue, `DENSE_RANK()` ranking table, materialized-view summary with refresh |
-| 5 | **Live driver map** (Workflow 3) | `#/map` | `$geoNear` around a selectable origin, 5 km radius, list sorted by distance, polling every 10 s |
-| 6 | **Reviews & menus** (Workflow 4) | `#/reviews` | `$facet` rating distribution, top tags, average rating, plus the `Menus` catalog |
+| 4 | **Analytics** (Workflow 2 + materialized view) | `#/analytics` | Per-restaurant chart of 30 days of daily revenue with the 7-day moving average; paginated `DENSE_RANK()` ranking (click a row to chart it); materialized-view totals with a stored "last refreshed" time and a Refresh button |
+| 5 | **Live driver map** (Workflow 3) | `#/map` | `$geoNear` around a real restaurant (or any point clicked on the map), 5 km radius, one row per driver sorted by distance, polling every 10 s |
+| 6 | **Reviews & menus** (Workflow 4) | `#/reviews` | `$facet` rating distribution, top tags and average rating for one restaurant or all of them, plus that restaurant's `Menus` document as an accordion (category → items → add-ons) |
 
 **Demo user switching:** the header's **"Acting as"** picker chooses the customer (no login). It shows their wallet balance and whether they have an active order, and the choice is remembered across reloads.
 
+**Design:** one token-based design system (`web/src/theme.css`) following [docs/design/style_guide.md](docs/design/style_guide.md): warm orange brand, Inter, WCAG-AA text contrast, and a burger drawer on phones.
+
 ![Place order: success with the trigger-written audit row](docs/screenshots/place_order_desktop.png)
 
-<img src="docs/screenshots/browse_mobile.png" alt="Browse on a phone" width="260">
+| Analytics | Live driver map |
+|---|---|
+| ![Analytics](docs/screenshots/analytics_desktop.png) | ![Live driver map](docs/screenshots/driver_map_desktop.png) |
+| **Reviews & menus** | **Wallet history** |
+| ![Reviews & menus](docs/screenshots/reviews_menus_desktop.png) | ![Wallet history](docs/screenshots/wallet_history_desktop.png) |
+
+<img src="docs/screenshots/browse_mobile.png" alt="Browse on a phone" width="220"> <img src="docs/screenshots/analytics_mobile.png" alt="Analytics on a phone" width="220"> <img src="docs/screenshots/nav_drawer_mobile.png" alt="Navigation drawer on a phone" width="220">
 
 ## 2. Running it
 
@@ -139,7 +147,7 @@ Then start the API and web app as in steps 3–4 (`DATABASE_URL=postgresql://pos
 | Layer | Choice | Why |
 |---|---|---|
 | Front end | **React 18 + Vite** | Component-based screens, instant dev server, nothing to configure |
-| Styling | **Plain CSS** (`styles.css`, `screens.css`) | One small, consistent design system without a UI framework to learn; easy to restyle from the Figma design |
+| Styling | **Plain CSS with design tokens** (`theme.css` → `styles.css`, `screens.css`; `theme.js` for charts and the map) | One small, consistent design system without a UI framework to learn; every colour, size and radius comes from one token file |
 | Charts | **Recharts** | Simple React API for the line/bar charts |
 | Map | **Leaflet + react-leaflet + OpenStreetMap tiles** | Free, no API key or billing account (Google Maps / Mapbox need one) |
 | Icons | **lucide-react** | Consistent, tree-shaken SVG icons |
@@ -177,13 +185,16 @@ cd api
 npm test
 ```
 
-There are 14 integration tests in `api/test/transaction.test.js`. They run against the seeded database, because the behaviour under test lives in the database:
+There are 23 integration tests: 14 in `api/test/transaction.test.js` and 9 in `api/test/analytics_map_reviews.test.js`. They run against the seeded PostgreSQL and MongoDB databases, because the behaviour under test lives in the databases:
 
 | Area | Cases |
 |---|---|
 | Workflow 1 | success (balance debited, DEBIT audit row from the trigger); second active order blocked (409, wallet and audit unchanged); advance PREPARING → DELIVERING → DELIVERED then re-order succeeds; insufficient balance (422, nothing charged); zero/negative/malformed amounts (400); the procedure itself rejects negatives; unknown restaurant/customer (404) |
 | Browse | server-side pagination, page-size cap, search + filter |
 | Audit | running balance equals `balance_after` for every row; date range filtering; inclusive end date; inverted range rejected |
+| Workflow 2 | the last day's 7-day average equals an independent SQL average of that day and the 6 before it; rankings paginated and `DENSE_RANK` never decreases; `REFRESH` moves `refreshed_at` forward; malformed (400) and unknown (404) restaurant |
+| Workflow 3 | one row per driver, sorted by distance, all within 5 km, at most 20; a far-away origin returns an empty list |
+| Workflow 4 | rating counts add up to the review total; the restaurant filter narrows the `$facet`; menu found / 404 `MENU_NOT_FOUND` / 400 for a malformed id |
 
 We focused the tests on the transaction path because it is where money moves and where the inherited code was broken. The tests place a few real orders for one customer and deliver them afterwards, so the data stays consistent.
 
@@ -217,6 +228,10 @@ Every change is marked `[Team 26]` in the code. The full reasoning and evidence 
 | `sql/04_stored_procedures.sql` | Reject `amount <= 0` (SQLSTATE 22023); `User does not exist` uses SQLSTATE P0002 | A negative amount **credited** the wallet |
 | `sql/07_fixes_transactions.sql` (new) | `sp_advance_order_status`; indexes `idx_wallet_audit_user_ts`, `idx_orders_status_created_at` | Status changes needed by the PDF; audit/browse queries no longer scan the whole table |
 | `data_generation/postgres_seeder.py` | Restaurants moved to the driver-ping area; ~20% active orders; consistent wallet chains; `TRUNCATE` before insert; refresh the materialized view after seeding | Map returned 0 drivers; 96.8% of users could not order; audit trail was random; re-seeding doubled the data; the view was empty |
+| `sql/05_materialized_views.sql` | `NOW() AS refreshed_at` column in `restaurant_completed_revenue` | PostgreSQL stores no refresh time; the Analytics screen must show "last refreshed" |
+| `mongo/02_workflow3_geonear.js` | After `$geoNear`: group pings per driver (latest ping and its distance), sort by distance, `$limit: 20` (was `$limit: 1`) | Returned one ping; a list repeated the same driver (62,770 pings from 7,038 drivers within 5 km) |
+| `data_generation/mongo_seeder.py` | Reads restaurants from PostgreSQL: `Reviews`/`Menus` use the restaurant UUID; one menu per restaurant with optional add-ons, dietary tags, spice level and combos; ratings and tags vary by restaurant; `random.seed(42)`. Driver pings unchanged | Integer ids 1–100 matched no restaurant and there were only 2 menus; uniform random reviews made every chart bar equal |
+| `sql/06_window_analytics.sql` | Unchanged. The API reuses steps 1–4 for one restaurant's 30-day series and the full query (paginated) for the ranking | The original returns only the latest day per restaurant, which cannot be charted over time |
 
 ## 8. Project structure
 
@@ -245,6 +260,9 @@ Every change is marked `[Team 26]` in the code. The full reasoning and evidence 
         ├── components/       # Sidebar, ActorPicker, RestaurantPicker, AdvanceButton, Panel, StatCard, ui.jsx
         ├── context/          # "Acting as" customer
         ├── services/api.js   # API client
+        ├── theme.css         # design tokens (colours, type, spacing); theme.js mirrors colours for charts/map
+        ├── styles.css        # shell, shared components, Analytics / Map / Reviews
+        ├── screens.css       # Browse, Place order, Wallet history
         └── router.js         # hash routing
 ```
 
@@ -254,7 +272,7 @@ Team 26. The allocation sheet lists four members; **Jyotiraditya Kumar is no lon
 
 | Member | Design | Code | Documentation |
 |---|---|---|---|
-| **Nisarg Bhojani** | Users, wireframes, Figma design system, visual QA | `TODO` | Design docs, screenshots, demo video |
+| **Nisarg Bhojani** | Users, wireframes, Figma design system, visual QA | Design-token system (`theme.css`, `theme.js`) and restyle of all six screens (`styles.css`, `screens.css`), phone navigation drawer; UI-upgrade data fixes: per-restaurant 7-day series and stored `refreshed_at` (Analytics), one row per driver around real restaurants (Map), Mongo seeder linked to PostgreSQL restaurants and menu accordion (Reviews & menus), with 9 integration tests | Style guide, [UI upgrade spec](docs/design/2026-10-15-ui-upgrade-design.md) and [plan](docs/design/2026-10-15-ui-upgrade-plan.md), screenshots, demo video |
 | **Kodavali Sai** | `TODO` | API + screens: Analytics, Live driver map, Reviews & menus | `TODO` |
 | **Mohit Tripathi** | Wireframes for Browse / Place order / Wallet | Inherited-DB fixes (checkout procedure, status procedure, indexes, seeder), API + screens: Browse, Place order, Wallet history, "Acting as" picker, tests | Handover note, API endpoints, README |
 | Jyotiraditya Kumar | – | – | – (left the college) |
