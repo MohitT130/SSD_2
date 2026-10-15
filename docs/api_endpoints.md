@@ -97,7 +97,9 @@ Reads the wallet balance, runs `CALL sp_execute_checkout($1, $2, $3)` as a **pla
 |---|---|---|---|
 | `GET /map/nearby` | `lat`, `lng`, `radiusKm` (≤ 5) | `{ origin, radiusKm, data: [ { driver_id, location, distanceMeters, created_at } ] }`: one row per driver (latest ping), nearest first, at most 20 | MongoDB `DriverPings` `$geoNear` (`2dsphere`), `query: { active: true }` |
 
-The web app polls this every 10 s so new pings appear without a page reload.
+| `POST /map/simulate-pings` | body (optional) `{ lat, lng }` | `{ data: { inserted } }` | Demo simulator: inserts a fresh ping (moved ~40 m, stamped now) for the ≤ 30 nearest active drivers; if fewer than 5 are within 5 km, brings a few active drivers into the area |
+
+The web app polls `/map/nearby` while "Live updates" is on, and before each poll it calls `/map/simulate-pings` for the current origin. New pings therefore appear without a page reload, and the 2-hour TTL never empties the map during a demo.
 
 ## 7. Reviews + catalog — Workflow 4 (`api/src/routes/reviews.js`)
 

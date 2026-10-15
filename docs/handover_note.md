@@ -44,7 +44,7 @@ Every change is marked `[Team 26]` in the code and listed in the README change l
 | Map SQLSTATE `P0001` / `23505` / `23503` / `P0002` / `55000` to friendly API errors | `api/src/errors.js` | #3 | ✅ Done, verified |
 | Restaurants seeded inside the driver-ping area (lat 17.36–17.46, lng 78.33–78.43) | `data_generation/postgres_seeder.py` | #4 | ✅ Done (PostgreSQL side) |
 | Seed `Menus`/`Reviews` with PostgreSQL restaurant UUIDs | `data_generation/mongo_seeder.py` | #5 | ✅ Done, verified: every restaurant has a menu; reviews filter per restaurant |
-| Ping simulator so the map is not emptied by the 2-hour TTL | `data_generation/` or `api/` | #6 | ⏳ Not done: re-run `mongo_seeder.py` before a demo if the map is empty |
+| Ping simulator so the map is not emptied by the 2-hour TTL: `POST /api/map/simulate-pings`, called on every live poll of the map, re-pings the nearest drivers (moved ~40 m) | `api/src/routes/map.js`, `web/src/pages/DriverMap.jsx` | #6 | ✅ Done (Sai), verified by test |
 | `$geoNear` → one row per driver → sort by distance | `mongo/02_workflow3_geonear.js` + `api/src/routes/map.js` | #7 | ✅ Done, verified: 20 distinct drivers, sorted, ≤ 5 km |
 | New `sp_advance_order_status(order_id)`; seeder keeps only the newest order of ~20% of users active (2,069 of 10,000) | `sql/07_fixes_transactions.sql`, seeder | #8, #11 | ✅ Done, verified |
 | Audit logs generated as a consistent chain per user (orders become DEBITs, plus top-up CREDITs); wallet = end of chain | `data_generation/postgres_seeder.py` | #9 | ✅ Done: 10,000/10,000 wallets match, 0 chain breaks |

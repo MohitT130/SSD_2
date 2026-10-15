@@ -52,6 +52,7 @@ export const api = {
   summary:()=>request('/analytics/summary'),
   refresh:()=>request('/analytics/refresh',{method:'POST'}),
   nearby:(lat,lng,radiusKm=5)=>request(`/map/nearby?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`),
+  simulatePings:(lat,lng)=>request('/map/simulate-pings',{method:'POST',body:JSON.stringify({ lat, lng })}),
   reviewAnalytics:(restaurantId)=>request(`/reviews/analytics${qs({ restaurantId })}`),
   menu:(restaurantId)=>request(`/reviews/menus${qs({ restaurantId })}`),
   menus:()=>request('/reviews/menus')

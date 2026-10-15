@@ -110,6 +110,22 @@ describe('Driver map: Workflow 3 ($geoNear)', () => {
     assert.equal(status, 200);
     assert.deepEqual(body.data, []);
   });
+
+  test('the ping simulator adds fresh pings that the next $geoNear query returns', async () => {
+    const { rows: [r] } = await getPgPool().query('SELECT latitude, longitude FROM restaurants ORDER BY id LIMIT 1');
+    const before = Date.now();
+
+    const sim = await fetch(`${base}/map/simulate-pings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat: r.latitude, lng: r.longitude }),
+    }).then((response) => response.json());
+    assert.ok(sim.data.inserted > 0);
+
+    const { body } = await api('GET', `/map/nearby?lat=${r.latitude}&lng=${r.longitude}`);
+    assert.ok(body.data.some((driver) => Date.parse(driver.created_at) >= before - 1000), 'at least one driver shows the new ping');
+    assert.ok(body.data.every((driver) => driver.distanceMeters <= 5000));
+  });
 });
 
 describe('Reviews & menus: Workflow 4 ($facet)', () => {

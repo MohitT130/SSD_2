@@ -93,4 +93,77 @@ router.get('/nearby', async (req, res, next) => {
   }
 });
 
+// POST /api/map/simulate-pings   body (optional): { lat, lng }
+//
+// Demo ping simulator (Kodavali Sai). DriverPings has a 2-hour TTL index, so
+// without new pings the map empties during a demo. Each call sends a fresh
+// ping for active drivers: their latest position, moved up to ~40 m, stamped
+// now. With an origin, drivers within 5 km of it are moved; if fewer than 5
+// are left there, a few active drivers are brought into the area so the
+// $geoNear list never goes empty.
+const SIMULATED_DRIVERS = 30;
+const jitter = () => (Math.random() - 0.5) * 0.0008; // ~±40 m
+
+router.post('/simulate-pings', async (req, res, next) => {
+  if (process.env.DEMO_MODE === 'true') return res.json({ data: { inserted: 0 }, source: 'demo' });
+
+  try {
+    const lat = Number(req.body?.lat);
+    const lng = Number(req.body?.lng);
+    const hasOrigin = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+
+    const db = await getMongoDb();
+    const pings = db.collection(process.env.DRIVER_PINGS_COLLECTION || 'DriverPings');
+
+    const latestPerDriver = [
+      { $sort: { driver_id: 1, created_at: -1 } },
+      { $group: { _id: '$driver_id', location: { $first: '$location' } } },
+    ];
+
+    // With an origin: the drivers the map is showing (nearest first), so the
+    // visible markers are the ones that move.
+    let drivers = hasOrigin
+      ? await pings.aggregate([
+          { $geoNear: { near: { type: 'Point', coordinates: [lng, lat] }, key: 'location', distanceField: 'd', maxDistance: 5000, spherical: true, query: { active: true } } },
+          { $sort: { driver_id: 1, created_at: -1 } },
+          { $group: { _id: '$driver_id', location: { $first: '$location' }, d: { $first: '$d' } } },
+          { $sort: { d: 1 } },
+          { $limit: SIMULATED_DRIVERS },
+        ], { allowDiskUse: true }).toArray()
+      : await pings.aggregate([
+          { $match: { active: true } },
+          ...latestPerDriver,
+          { $limit: SIMULATED_DRIVERS },
+        ], { allowDiskUse: true }).toArray();
+
+    if (hasOrigin && drivers.length < 5) {
+      const nearby = new Set(drivers.map((d) => d._id));
+      const extra = await pings.aggregate([
+        { $match: { active: true } },
+        { $group: { _id: '$driver_id' } },
+        { $sample: { size: 10 } },
+      ]).toArray();
+      for (const { _id } of extra) {
+        if (nearby.has(_id)) continue;
+        // Somewhere within ~3 km of the origin.
+        drivers.push({ _id, location: { type: 'Point', coordinates: [lng + (Math.random() - 0.5) * 0.05, lat + (Math.random() - 0.5) * 0.05] } });
+      }
+    }
+
+    if (!drivers.length) return res.json({ data: { inserted: 0 }, source: 'mongodb' });
+
+    const now = new Date();
+    await pings.insertMany(drivers.map(({ _id, location }) => ({
+      driver_id: _id,
+      active: true,
+      location: { type: 'Point', coordinates: [location.coordinates[0] + jitter(), location.coordinates[1] + jitter()] },
+      created_at: now,
+    })), { ordered: false });
+
+    res.json({ data: { inserted: drivers.length }, source: 'mongodb' });
+  } catch (e) {
+    next(e);
+  }
+});
+
 export default router;

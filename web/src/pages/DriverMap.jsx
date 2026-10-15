@@ -73,10 +73,14 @@ export default function DriverMap() {
       .catch((e) => { setError(e.message); setLoading(false); });
   }, []);
 
-  const load = useCallback(async () => {
+  // `simulate`: on each live poll, first send fresh pings around the origin
+  // (POST /map/simulate-pings) so drivers move and the 2-hour TTL never
+  // empties the map during a demo.
+  const load = useCallback(async (simulate = false) => {
     if (!origin) return;
     setError('');
     try {
+      if (simulate) await api.simulatePings(origin.lat, origin.lng).catch(() => {});
       const result = await api.nearby(origin.lat, origin.lng, RADIUS_KM);
       setDrivers(result.data);
       setLastUpdate(new Date());
@@ -94,7 +98,7 @@ export default function DriverMap() {
     setSelectedId(null);
     load();
     if (!polling) return undefined;
-    const timer = setInterval(load, POLL_MS);
+    const timer = setInterval(() => load(true), POLL_MS);
     return () => clearInterval(timer);
   }, [origin, polling, load]);
 
@@ -113,12 +117,12 @@ export default function DriverMap() {
           <h1>Live driver map</h1>
           <p className="page-description">Active drivers within {RADIUS_KM} km of a restaurant, nearest first, from a <code>$geoNear</code> query on <code>DriverPings</code>. Click the map to search around any point.</p>
         </div>
-        <button className="button secondary" onClick={load} disabled={!origin}>
+        <button className="button secondary" onClick={() => load()} disabled={!origin}>
           <RefreshCw size={16} /> Refresh now
         </button>
       </div>
 
-      <ErrorBanner message={error} onRetry={load} />
+      <ErrorBanner message={error} onRetry={() => load()} />
 
       <div className="map-toolbar">
         <label className="origin-select">
