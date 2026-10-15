@@ -5,8 +5,8 @@ A web front end for the inherited **BiteStream** food-delivery backend (PostgreS
 | | |
 |---|---|
 | **Repository** | https://github.com/MohitT130/SSD_2 (created from [`team10_a1`](https://github.com/sreelasyamuvva/team10_a1) with its full commit history) |
-| **Final commit hash** | `TODO: fill in after the last commit` |
-| **Demo video (≤ 5 min)** | `TODO: YouTube (unlisted) link` |
+| **Final commit hash** | `9b13c5327f6098ff16d38c046664829aa558163f` (the last commit with project content; the only commit after it adds this hash and the video link to this README, because a commit cannot contain its own hash) |
+| **Demo video (3 min 18 s)** | [docs/demo/BiteStream_Team26_demo.webm](https://github.com/MohitT130/SSD_2/blob/main/docs/demo/BiteStream_Team26_demo.webm) (on GitHub: open the link, then “View raw” to play or download; captioned walkthrough of all six screens on the seeded data) |
 | **Inherited backend README** | [docs/part_a_README.md](docs/part_a_README.md) |
 | **Handover note** | [docs/handover_note.md](docs/handover_note.md) |
 | **API endpoints** | [docs/api_endpoints.md](docs/api_endpoints.md) |
