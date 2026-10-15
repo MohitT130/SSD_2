@@ -224,6 +224,84 @@ td { border-bottom-color: var(--border); }
 .snapshot-panel { border-style: dashed; background: var(--page); box-shadow: none; }
 .recharts-default-tooltip { font-family: var(--font); }
 
+/* ---- 10. Driver map: dispatch slips ---------------------------------------- */
+/* Warm the OpenStreetMap tiles so the map sits on the same paper. */
+.leaflet-tile-pane { filter: sepia(.3) saturate(.82) hue-rotate(-6deg) brightness(1.02) contrast(.95); }
+.leaflet-frame { border-color: var(--border-strong); border-radius: var(--radius); }
+.origin-marker-wrap::before {
+  content: ''; position: absolute; left: 50%; top: 100%;
+  width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%;
+  background: rgba(232, 89, 12, .35);
+  animation: pulse 2s var(--ease-out) infinite;
+}
+.driver-list { gap: 8px; padding: 2px 2px 6px; }
+.driver-row {
+  --notch: 6px; --notch-y: 50%;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); padding: 10px 16px;
+  transition: transform .18s var(--ease-out), border-color .18s;
+}
+.driver-row:hover { transform: translateX(2px); border-color: var(--border-strong); background: var(--surface); }
+.driver-row.selected { border-color: var(--brand-line); background: var(--brand-soft); }
+.driver-avatar { font-family: var(--mono); border-radius: 4px; background: var(--info-soft); color: var(--info-strong); }
+.driver-info strong { font-family: var(--mono); font-size: var(--fs-table); font-weight: 600; letter-spacing: .04em; }
+.driver-distance { font-family: var(--serif); font-size: 17px; font-weight: 600; }
+.radius-chip, .map-legend, .map-list-footer { font-family: var(--mono); }
+.legend-driver { background: var(--info); }
+
+/* ---- 11. Reviews & menus: the printed menu card --------------------------- */
+.score-block {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 18px 10px 14px; border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg); background: var(--surface);
+}
+.score {
+  font-family: var(--serif); font-size: 48px; font-weight: 600; line-height: 1;
+  letter-spacing: -1px; font-variation-settings: 'opsz' 144;
+}
+.score-side { display: grid; gap: 6px; }
+.score-stars { display: flex; gap: 2px; color: var(--warning); }
+.score-caption { font-family: var(--mono); font-size: var(--fs-caption); color: var(--text-muted); }
+.rating-track div { background: var(--warning); }
+
+.menu-print {
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 4px;
+  outline: 1px solid var(--border); outline-offset: -8px;
+  padding: 32px clamp(18px, 4vw, 48px) 28px;
+}
+.menu-print-head { display: grid; justify-items: center; gap: 6px; text-align: center; padding-bottom: 8px; }
+.menu-print-head strong {
+  font-family: var(--serif); font-size: 32px; font-weight: 600; letter-spacing: -.4px;
+  font-variation-settings: 'opsz' 96;
+}
+.menu-print-kicker { font-family: var(--mono); font-size: var(--fs-caption); letter-spacing: .2em; text-transform: uppercase; color: var(--text-muted); }
+.menu-accordion details { border: 0; border-radius: 0; overflow: visible; }
+.menu-accordion summary {
+  justify-content: center; gap: 14px; padding: 22px 0 6px; background: transparent;
+  font-family: var(--mono); font-size: var(--fs-caption); font-weight: 600;
+  letter-spacing: .22em; text-transform: uppercase; color: var(--brand-strong);
+}
+.menu-accordion summary::before, .menu-accordion summary::after {
+  content: ''; flex: 1; border-top: 1px solid var(--border-strong); margin: 0; transform: none;
+}
+.menu-accordion details[open] summary::before { transform: none; }
+.menu-accordion summary span { flex: 0 0 auto; }
+.menu-accordion summary small { order: 3; letter-spacing: .04em; text-transform: none; font-weight: 400; }
+.menu-accordion summary small::after { content: ' ▾'; }
+.menu-accordion details:not([open]) summary small::after { content: ' ▸'; }
+.menu-accordion ul { padding: 0; }
+.menu-item { display: block; border-top: 0; padding: 10px 0; }
+.menu-item-main { gap: 6px; }
+.menu-line { display: flex; align-items: baseline; gap: 10px; }
+.menu-line strong {
+  min-width: 0; font-family: var(--serif); font-size: 17px; font-weight: 500;
+  font-variation-settings: 'opsz' 24;
+}
+.leader { flex: 1; min-width: 24px; border-bottom: 2px dotted var(--border-strong); transform: translateY(-4px); }
+.menu-price { font-family: var(--serif); font-size: 16px; font-weight: 600; }
+.menu-badge { font-family: var(--mono); font-size: var(--fs-caption); border-radius: 4px; }
+.menu-addons { font-size: var(--fs-caption); }
+
 /* ---- Reduced motion: every animation lands on its final frame. ----------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -149,7 +149,7 @@ export default function DriverMap() {
               <button
                 type="button"
                 key={driver.driver_id}
-                className={`driver-row ${selectedId === driver.driver_id ? 'selected' : ''}`}
+                className={`driver-row ticket ${selectedId === driver.driver_id ? 'selected' : ''}`}
                 onClick={() => selectDriver(driver)}
               >
                 <div className="driver-avatar">{index + 1}</div>
