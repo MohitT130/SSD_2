@@ -9,25 +9,179 @@ import {
   TrendingUp,
   AlertCircle,
 } from 'lucide-react';
+
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+
 import { api } from '../services/api';
 import StatCard from '../components/StatCard';
 import Panel from '../components/Panel';
+import RestaurantPicker from '../components/RestaurantPicker';
 
-const money = (n) =>
+const money = (value) =>
   new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 0,
-  }).format(Number(n) || 0);
+  }).format(Number(value) || 0);
+
+const formatDate = (value, includeYear = false) => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value ?? '');
+  }
+
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    ...(includeYear ? { year: 'numeric' } : {}),
+    timeZone: 'UTC',
+  });
+};
+
+const formatAxisValue = (value) => {
+  const amount = Number(value);
+
+  if (amount >= 10000000) {
+    return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  }
+
+  if (amount >= 100000) {
+    return `₹${(amount / 100000).toFixed(1)}L`;
+  }
+
+  if (amount >= 1000) {
+    return `₹${(amount / 1000).toFixed(0)}k`;
+  }
+
+  return `₹${amount.toLocaleString('en-IN')}`;
+};
+
+const chartButtonStyle = (active) => ({
+  padding: '8px 14px',
+  border: active ? '1px solid #4778ee' : '1px solid #e2e8f0',
+  borderRadius: 8,
+  background: active ? '#4778ee' : '#ffffff',
+  color: active ? '#ffffff' : '#475569',
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: 'pointer',
+});
+
+function RevenueChart({ data, chartType }) {
+  const maxValue = Math.max(
+    0,
+    ...data.map((item) =>
+      Number(item.moving_average_7_day) || 0
+    )
+  );
+
+  // Add 15% headroom above the highest plotted value.
+  const upperLimit = maxValue > 0
+    ? Math.ceil((maxValue * 1.15) / 1000) * 1000
+    : 10000;
+
+  const commonProps = {
+    data,
+    margin: { top: 12, right: 16, left: 8, bottom: 8 },
+  };
+
+  const axes = (
+    <>
+      <CartesianGrid
+        strokeDasharray="3 3"
+        vertical={false}
+        stroke="#e5eaf2"
+      />
+
+      <XAxis
+        dataKey="revenue_date"
+        axisLine={false}
+        tickLine={false}
+        tick={{ fill: '#7b879b', fontSize: 11 }}
+        tickMargin={12}
+        minTickGap={24}
+        tickFormatter={formatDate}
+      />
+
+      <YAxis
+        axisLine={false}
+        tickLine={false}
+        tick={{ fill: '#7b879b', fontSize: 11 }}
+        tickFormatter={formatAxisValue}
+        width={72}
+        domain={[0, upperLimit]}
+        allowDataOverflow={false}
+        tickCount={6}
+      />
+
+      <Tooltip
+        labelFormatter={(value) => formatDate(value, true)}
+        formatter={(value) => [
+          money(value),
+          '7-day moving average',
+        ]}
+        contentStyle={{
+          border: '1px solid #e5eaf2',
+          borderRadius: 12,
+          padding: '12px 14px',
+          boxShadow: '0 4px 16px rgba(25, 40, 70, 0.08)',
+        }}
+        cursor={
+          chartType === 'bar'
+            ? { fill: '#eef3ff' }
+            : false
+        }
+      />
+    </>
+  );
+
+  return (
+    <ResponsiveContainer width="100%" height={340}>
+      {chartType === 'bar' ? (
+        <BarChart {...commonProps} barCategoryGap="25%">
+          {axes}
+
+          <Bar
+            dataKey="moving_average_7_day"
+            name="7-day moving average"
+            fill="#4778ee"
+            radius={[5, 5, 0, 0]}
+            maxBarSize={36}
+          />
+        </BarChart>
+      ) : (
+        <LineChart {...commonProps}>
+          {axes}
+
+          <Line
+            type="monotone"
+            dataKey="moving_average_7_day"
+            name="7-day moving average"
+            stroke="#4778ee"
+            strokeWidth={3}
+            dot={{ r: 3, fill: '#4778ee', strokeWidth: 0 }}
+            activeDot={{
+              r: 6,
+              stroke: '#ffffff',
+              strokeWidth: 2,
+            }}
+          />
+        </LineChart>
+      )}
+    </ResponsiveContainer>
+  );
+}
 
 export default function Analytics() {
   const [trend, setTrend] = useState([]);
@@ -38,30 +192,41 @@ export default function Analytics() {
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [refreshed, setRefreshed] = useState(null);
+  const [restaurant, setRestaurant] = useState(null);
+  const [chartType, setChartType] = useState('bar');
 
   async function load() {
     setLoading(true);
     setError('');
 
     try {
-      const [a, r, s] = await Promise.all([
-        api.movingAverage(),
-        api.rankings(),
-        api.summary(),
-      ]);
+      const [analytics, rankingResult, summaryResult] =
+        await Promise.all([
+          api.movingAverage(restaurant?.id),
+          api.rankings(),
+          api.summary(),
+        ]);
 
-      setTrend(Array.isArray(a.data) ? a.data : []);
-      setRankings(Array.isArray(r.data) ? r.data : []);
-      setSummary(s.data || {});
-      setSource(a.source || s.source || '');
+      setTrend(
+        Array.isArray(analytics.data) ? analytics.data : []
+      );
+
+      setRankings(
+        Array.isArray(rankingResult.data)
+          ? rankingResult.data
+          : []
+      );
+
+      setSummary(summaryResult.data || {});
+      setSource(analytics.source || summaryResult.source || '');
 
       setRefreshed(
-        s.data?.lastRefreshed ||
-        s.data?.last_refreshed ||
+        summaryResult.data?.last_refreshed ??
+        summaryResult.data?.lastRefreshed ??
         null
       );
-    } catch (e) {
-      setError(e.message || 'Unable to load analytics data.');
+    } catch (err) {
+      setError(err.message || 'Unable to load analytics data.');
     } finally {
       setLoading(false);
     }
@@ -69,33 +234,25 @@ export default function Analytics() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [restaurant?.id]);
 
   async function refresh() {
     setRefreshing(true);
     setError('');
 
     try {
-      const result = await api.refresh();
-
-      // Reload the data after refreshing the materialized view.
+      await api.refresh();
       await load();
-
-      // Keep the timestamp returned by the refresh endpoint.
-      setRefreshed(
-        result.lastRefreshed ||
-        result.data?.lastRefreshed ||
-        null
-      );
-    } catch (e) {
-      setError(e.message || 'Unable to refresh the reporting snapshot.');
+    } catch (err) {
+      setError(err.message || 'Unable to refresh the reporting snapshot.');
     } finally {
       setRefreshing(false);
     }
   }
 
   const totalRevenue =
-    summary?.totalRevenue ?? summary?.total_revenue;
+    summary?.totalRevenue ??
+    summary?.total_revenue;
 
   const totalOrders =
     summary?.totalOrders ??
@@ -111,6 +268,8 @@ export default function Analytics() {
     summary?.restaurant_count ??
     summary?.restaurants;
 
+  const rankedRestaurants = rankings.slice(0, 20);
+
   return (
     <div className="page-content">
       <div className="page-title-row">
@@ -124,6 +283,7 @@ export default function Analytics() {
         </div>
 
         <button
+          type="button"
           className="button secondary"
           onClick={load}
           disabled={loading}
@@ -136,16 +296,18 @@ export default function Analytics() {
       {source === 'demo' && (
         <div className="demo-banner">
           <span className="demo-dot" />
-          Demo data is displayed. Connect and verify the inherited
-          database before your final demo.
+          Demo data is displayed. Verify the inherited database before
+          your final demo.
         </div>
       )}
 
       {error && (
-        <div className="error-banner">
+        <div className="error-banner" role="alert">
           <AlertCircle size={17} />
           <span>{error}</span>
-          <button onClick={load}>Retry</button>
+          <button type="button" onClick={load}>
+            Retry
+          </button>
         </div>
       )}
 
@@ -153,7 +315,7 @@ export default function Analytics() {
         <StatCard
           label="Total revenue"
           value={summary ? money(totalRevenue) : '—'}
-          detail="Across seeded orders"
+          detail="Across completed orders"
           icon={IndianRupee}
           tone="blue"
         />
@@ -191,123 +353,100 @@ export default function Analytics() {
         />
       </div>
 
+      <Panel
+        title="Moving average filter"
+        subtitle="Choose a restaurant to inspect its 7-day revenue moving average"
+      >
+        <RestaurantPicker
+          value={restaurant}
+          onChange={setRestaurant}
+          disabled={loading}
+        />
+
+        {restaurant && (
+          <p className="page-description">
+            Showing revenue trend for <strong>{restaurant.name}</strong>.
+          </p>
+        )}
+      </Panel>
+
       <div className="analytics-grid">
         <Panel
-          title="7-day revenue trend"
-          subtitle="Moving average revenue · INR"
+          title="7-day revenue moving average"
+          subtitle={
+            restaurant
+              ? `Daily trend for ${restaurant.name} · INR`
+              : 'Select a restaurant to view its individual trend'
+          }
           className="trend-panel"
         >
-          <div className="chart-legend">
-            <span />
-            <span>7-day moving average</span>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 12,
+              marginBottom: 20,
+            }}
+          >
+            <div className="chart-legend">
+              <span />
+              <span>7-day moving average</span>
+            </div>
+
+            <div
+              role="group"
+              aria-label="Chart type"
+              style={{
+                display: 'flex',
+                gap: 6,
+                padding: 4,
+                background: '#f1f4f9',
+                borderRadius: 10,
+              }}
+            >
+              <button
+                type="button"
+                style={chartButtonStyle(chartType === 'bar')}
+                aria-pressed={chartType === 'bar'}
+                onClick={() => setChartType('bar')}
+              >
+                Bar chart
+              </button>
+
+              <button
+                type="button"
+                style={chartButtonStyle(chartType === 'line')}
+                aria-pressed={chartType === 'line'}
+                onClick={() => setChartType('line')}
+              >
+                Line chart
+              </button>
+            </div>
           </div>
 
           {loading ? (
             <div className="chart-empty">
               Loading revenue data…
             </div>
-          ) : trend.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart
-                data={trend}
-                margin={{ top: 10, right: 12, left: 0, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient
-                    id="revenueFill"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="0%"
-                      stopColor="#4778ee"
-                      stopOpacity={0.2}
-                    />
-                    <stop
-                      offset="100%"
-                      stopColor="#4778ee"
-                      stopOpacity={0.01}
-                    />
-                  </linearGradient>
-                </defs>
-
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="#e9edf4"
-                />
-
-                <XAxis
-                  dataKey="revenue_date"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#8b95a7', fontSize: 12 }}
-                  dy={10}
-                  tickFormatter={(value) => {
-                    const date = new Date(value);
-                    return Number.isNaN(date.getTime())
-                      ? value
-                      : date.toLocaleDateString('en-IN', {
-                          day: '2-digit',
-                          month: 'short',
-                          timeZone: 'UTC',
-                        });
-                  }}
-                />
-
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#8b95a7', fontSize: 12 }}
-                  tickFormatter={(value) =>
-                    `${Math.round(value / 1000)}k`
-                  }
-                  width={42}
-                />
-
-                <Tooltip
-                  labelFormatter={(value) =>
-                    new Date(value).toLocaleDateString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                      timeZone: 'UTC',
-                    })
-                  }
-                  formatter={(value) => [
-                    money(value),
-                    '7-day moving average',
-                  ]}
-                  contentStyle={{
-                    border: '1px solid #e9edf4',
-                    borderRadius: 12,
-                    fontSize: 12,
-                  }}
-                />
-
-                <Area
-                  type="monotone"
-                  dataKey="moving_average_7_day"
-                  name="Moving average"
-                  stroke="#4778ee"
-                  strokeWidth={3}
-                  fill="url(#revenueFill)"
-                  activeDot={{ r: 5 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
+          ) : !restaurant ? (
             <div className="chart-empty">
-              No revenue data returned yet.
+              Select a restaurant above to view its individual revenue
+              trend.
             </div>
+          ) : trend.length === 0 ? (
+            <div className="chart-empty">
+              No moving-average data is available for this restaurant.
+            </div>
+          ) : (
+            <RevenueChart data={trend} chartType={chartType} />
           )}
         </Panel>
 
         <Panel
           title="Revenue by restaurant"
-          subtitle="Ranked performance snapshot"
+          subtitle="Ranked performance snapshot · Top 20"
           className="rank-panel"
         >
           <div className="ranking-table-wrap">
@@ -322,38 +461,38 @@ export default function Analytics() {
               </thead>
 
               <tbody>
-                {rankings.map((r, i) => (
-                  <tr key={r.restaurant_id || i}>
+                {rankedRestaurants.map((row, index) => (
+                  <tr key={row.restaurant_id || index}>
                     <td>
                       <span
                         className={`rank-number ${
-                          Number(r.revenue_rank) <= 3 ? 'top' : ''
+                          Number(row.revenue_rank) <= 3 ? 'top' : ''
                         }`}
                       >
-                        {r.revenue_rank ?? i + 1}
+                        {row.revenue_rank ?? index + 1}
                       </span>
                     </td>
 
                     <td>
                       <strong>
-                        {r.restaurant_name || 'Restaurant'}
+                        {row.restaurant_name || 'Restaurant'}
                       </strong>
-                      <small>{r.restaurant_id || ''}</small>
+                      <small>{row.restaurant_id || ''}</small>
                     </td>
 
                     <td className="money-cell">
-                      {money(r.daily_revenue)}
+                      {money(row.daily_revenue)}
                     </td>
 
                     <td className="money-cell">
-                      {money(r.moving_average_7_day)}
+                      {money(row.moving_average_7_day)}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
-            {!loading && rankings.length === 0 && (
+            {!loading && rankedRestaurants.length === 0 && (
               <div className="empty-inline">
                 No ranking rows returned.
               </div>
@@ -367,9 +506,10 @@ export default function Analytics() {
         subtitle="Summary snapshot generated by PostgreSQL"
         action={
           <button
+            type="button"
             className="button primary"
             onClick={refresh}
-            disabled={refreshing}
+            disabled={refreshing || loading}
           >
             <RefreshCw
               size={15}
@@ -387,12 +527,12 @@ export default function Analytics() {
           <div>
             <strong>
               {refreshed
-                ? `Last refreshed ${new Date(refreshed).toLocaleString()}`
+                ? `Last refreshed ${new Date(refreshed).toLocaleString('en-IN')}`
                 : 'Refresh time not available'}
             </strong>
+
             <p>
-              The refresh action calls the API, which refreshes the
-              configured materialized view.
+              The refresh action updates the PostgreSQL materialized view.
             </p>
           </div>
 

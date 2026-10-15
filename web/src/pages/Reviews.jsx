@@ -20,6 +20,7 @@ import {
 import { api } from '../services/api';
 import StatCard from '../components/StatCard';
 import Panel from '../components/Panel';
+import RestaurantPicker from '../components/RestaurantPicker';
 
 export default function Reviews() {
   const [analytics, setAnalytics] = useState(null);
@@ -28,13 +29,16 @@ export default function Reviews() {
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [source, setSource] = useState('');
+  const [restaurant, setRestaurant] = useState(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError('');
     (async () => {
       try {
         const [a, m] = await Promise.all([
-          api.reviewAnalytics(),
-          api.menus(),
+          api.reviewAnalytics(restaurant?.id),
+          api.menus(restaurant?.id),
         ]);
 
         setAnalytics(a.data);
@@ -46,7 +50,7 @@ export default function Reviews() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [restaurant?.id]);
 
   // Convert nested MongoDB categories and items into individual menu cards.
   const menuItems = menus.flatMap((menu) =>
@@ -89,6 +93,10 @@ export default function Reviews() {
           {Number(analytics?.averageRating || 0).toFixed(1)} average rating
         </div>
       </div>
+
+      <Panel title="Filter by restaurant" subtitle="Review analytics and menu catalog are filtered to the selected restaurant">
+        <RestaurantPicker value={restaurant} onChange={setRestaurant} disabled={loading} />
+      </Panel>
 
       {source === 'demo' && (
         <div className="demo-banner">

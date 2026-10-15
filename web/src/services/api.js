@@ -47,11 +47,12 @@ export const api = {
   checkout:(body)=>request('/checkout',{method:'POST',body:JSON.stringify(body)}),
 
   // Analytics, Map, Reviews
-  movingAverage:()=>request('/analytics/moving-average'),
+  movingAverage:(restaurantId)=>request(`/analytics/moving-average${qs({restaurantId})}`),
   rankings:()=>request('/analytics/rankings'),
   summary:()=>request('/analytics/summary'),
   refresh:()=>request('/analytics/refresh',{method:'POST'}),
-  nearby:(lat,lng,radiusKm=5)=>request(`/map/nearby?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`),
-  reviewAnalytics:()=>request('/reviews/analytics'),
-  menus:()=>request('/reviews/menus')
+  nearby:(lat,lng,radiusKm=5,restaurantId)=>request(`/map/nearby${qs({lat,lng,radiusKm,restaurantId})}`),
+  simulatePings:()=>request('/map/simulate-pings',{method:'POST'}),
+  reviewAnalytics:(restaurantId)=>request(`/reviews/analytics${qs({restaurantId})}`),
+  menus:(restaurantId)=>request(`/reviews/menus${qs({restaurantId})}`)
 };

@@ -4,8 +4,8 @@ import { demoReviews, demoMenus } from '../demo.js';
 
 const router = Router();
 
-const reviewCollection = () =>
-  process.env.REVIEWS_COLLECTION || 'Reviews';
+const reviewCollection = () => process.env.REVIEWS_COLLECTION || 'Reviews';
+const validId = (id) => !id || /^[0-9a-f-]{36}$/i.test(id);
 
 router.get('/analytics', async (req, res, next) => {
   if (process.env.DEMO_MODE === 'true') {
@@ -16,11 +16,15 @@ router.get('/analytics', async (req, res, next) => {
   }
 
   try {
+    const restaurantId = req.query.restaurantId || null;
+    if (!validId(restaurantId)) return res.status(400).json({ error: 'Invalid restaurantId.', code: 'INVALID_RESTAURANT_ID' });
     const db = await getMongoDb();
 
+    const pipeline = [];
+    if (restaurantId) pipeline.push({ $match: { restaurant_id: restaurantId } });
     const [facet] = await db
       .collection(reviewCollection())
-      .aggregate([
+      .aggregate(pipeline.concat([
         {
           $facet: {
             ratingDistribution: [
@@ -68,7 +72,7 @@ router.get('/analytics', async (req, res, next) => {
             ],
           },
         },
-      ])
+      ]))
       .toArray();
 
     const overall = facet?.overall?.[0] ?? {
@@ -115,11 +119,12 @@ router.get('/menus', async (req, res, next) => {
   }
 
   try {
+    const restaurantId = req.query.restaurantId || null;
+    if (!validId(restaurantId)) return res.status(400).json({ error: 'Invalid restaurantId.', code: 'INVALID_RESTAURANT_ID' });
     const db = await getMongoDb();
-
     const data = await db
       .collection(process.env.MENUS_COLLECTION || 'Menus')
-      .find({})
+      .find(restaurantId ? { restaurant_id: restaurantId } : {})
       .limit(100)
       .toArray();
 

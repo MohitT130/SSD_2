@@ -18,30 +18,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import Panel from '../components/Panel';
-
-// The first origin is a verified test location with active MongoDB drivers.
-const origins = [
-  {
-    label: 'Driver test location',
-    lat: 17.4485,
-    lng: 78.4075,
-  },
-  {
-    label: 'Restaurant · Banjara Hills',
-    lat: 17.3850,
-    lng: 78.4867,
-  },
-  {
-    label: 'Restaurant · Jubilee Hills',
-    lat: 17.4310,
-    lng: 78.4070,
-  },
-  {
-    label: 'Restaurant · Gachibowli',
-    lat: 17.4401,
-    lng: 78.3489,
-  },
-];
+import RestaurantPicker from '../components/RestaurantPicker';
 
 const driverIcon = L.divIcon({
   className: 'driver-marker-wrap',
@@ -94,7 +71,7 @@ function formatDistance(meters) {
 }
 
 export default function DriverMap() {
-  const [originIndex, setOriginIndex] = useState(0);
+  const [restaurant, setRestaurant] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [source, setSource] = useState('');
   const [loading, setLoading] = useState(true);
@@ -102,7 +79,7 @@ export default function DriverMap() {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [polling, setPolling] = useState(true);
 
-  const origin = origins[originIndex];
+  const origin = restaurant ? { label: restaurant.name, lat: Number(restaurant.latitude), lng: Number(restaurant.longitude) } : null;
 
   async function load(isPoll = false) {
     if (!isPoll) setLoading(true);
@@ -110,11 +87,9 @@ export default function DriverMap() {
     setError('');
 
     try {
-      const result = await api.nearby(
-        origin.lat,
-        origin.lng,
-        5
-      );
+      if (!origin) { setDrivers([]); setLoading(false); return; }
+      if (polling) await api.simulatePings().catch(() => {});
+      const result = await api.nearby(origin.lat, origin.lng, 5, restaurant.id);
 
       const rows = Array.isArray(result.data) ? result.data : [];
 
@@ -155,7 +130,7 @@ export default function DriverMap() {
       await load();
 
       if (!cancelled && polling) {
-        timer = setTimeout(pollDrivers, 10000);
+        timer = setTimeout(pollDrivers, 5000);
       }
     }
 
@@ -165,11 +140,11 @@ export default function DriverMap() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [originIndex, polling]);
+  }, [restaurant?.id, polling]);
 
   const center = useMemo(
-    () => [origin.lat, origin.lng],
-    [origin]
+    () => origin ? [origin.lat, origin.lng] : [17.4, 78.4],
+    [origin?.lat, origin?.lng]
   );
 
   return (
@@ -209,23 +184,10 @@ export default function DriverMap() {
         </div>
       )}
 
+      {!restaurant && <div className="empty-inline">Choose a restaurant to search for nearby drivers.</div>}
       <div className="map-toolbar">
-        <label className="origin-select">
-          <span>Search origin</span>
-
-          <select
-            value={originIndex}
-            onChange={(event) =>
-              setOriginIndex(Number(event.target.value))
-            }
-          >
-            {origins.map((item, index) => (
-              <option key={item.label} value={index}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <label className="origin-select"><span>Restaurant origin</span></label>
+        <RestaurantPicker value={restaurant} onChange={setRestaurant} disabled={loading} />
 
         <div className="radius-chip">
           <MapPin size={16} />
@@ -357,7 +319,7 @@ export default function DriverMap() {
 
               <Marker position={center}>
                 <Popup>
-                  {origin.label}
+                  {origin?.label || 'No restaurant selected'}
                   <br />
                   Selected origin
                 </Popup>
