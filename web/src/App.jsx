@@ -12,6 +12,12 @@ import { ActorProvider } from './context/ActorContext.jsx';
 import { navigate, useHashRoute } from './router';
 import { api } from './services/api';
 
+// Printed like the date line on a kitchen ticket: "THU · 15 OCT".
+const TODAY = new Date()
+  .toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })
+  .replace(',', ' ·')
+  .toUpperCase();
+
 const pages = {
   browse: { name: 'Browse', component: Browse },
   order: { name: 'Place order', component: PlaceOrder },
@@ -64,6 +70,7 @@ export default function App() {
             </button>
             <div className="breadcrumbs"><span>BiteStream</span><span className="crumb-slash">/</span><strong>{pages[page].name}</strong></div>
             <div className="topbar-actions">
+              <span className="date-stamp" title="Today">{TODAY}</span>
               <span className="acting-label">Acting as</span>
               <ActorPicker />
             </div>

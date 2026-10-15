@@ -1,0 +1,174 @@
+/* ==========================================================================
+   Kitchen Ticket: the concept layer (Nisarg Bhojani, Team 26)
+
+   styles.css and screens.css lay the screens out; this file gives them their
+   voice. Every screen is a piece of restaurant paper:
+     order    -> kitchen order ticket (KOT): notched, perforated, stamped
+     wallet   -> bank passbook: ruled ledger, printed amounts
+     analytics-> the day's board: big printed figures, medals
+     map      -> dispatch slips
+     menu     -> a printed menu card with dotted leaders
+   Sections: 1 type roles · 2 paper surfaces · 3 shell · 4 motifs · 5 motion
+             6+ signature moments per screen · reduced motion at the end.
+   ========================================================================== */
+
+/* ---- 1. Type roles -------------------------------------------------------- */
+/* Serif = printed (titles, money, scores) · Mono = ticket printer (codes,
+   times, labels) · Inter = everything you interact with. */
+body {
+  background-color: var(--page);
+  background-image: var(--grain);
+}
+.page-title-row h1 {
+  font-family: var(--serif);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  letter-spacing: -.8px;
+  font-variation-settings: 'opsz' 96;
+  line-height: 1.1;
+}
+.eyebrow {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: var(--fs-caption); font-weight: 500;
+  letter-spacing: .14em; color: var(--brand-strong); margin-bottom: 8px;
+}
+.eyebrow::before { content: ''; width: 20px; height: 1.5px; background: currentColor; }
+.nav-caption, th, .acting-label, .actor-menu-caption {
+  font-family: var(--mono); font-weight: 500; letter-spacing: .12em;
+}
+.panel-heading h2 {
+  font-family: var(--serif); font-size: 19px; font-weight: 600;
+  letter-spacing: -.3px; font-variation-settings: 'opsz' 36;
+}
+.stat-value, .serif {
+  font-family: var(--serif);
+  font-variation-settings: 'opsz' 72;
+  font-weight: 600;
+  letter-spacing: -.6px;
+}
+.stat-value { font-size: 32px; margin-top: 12px; }
+.stat-detail, .mono-label, .mono, .pagination, .page-indicator {
+  font-family: var(--mono); letter-spacing: .02em;
+}
+.mono { color: var(--text-muted); }
+code { background: var(--hover); color: var(--text); border: 1px solid var(--border); padding: 0 5px; }
+
+/* ---- 2. Paper surfaces -------------------------------------------------- */
+.panel, .stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+/* Each stat card is a small receipt: label, perforation, printed figure. */
+.stat-top { padding-bottom: 12px; border-bottom: 1px dashed var(--border-strong); color: var(--text-muted); }
+.stat-icon { color: var(--brand); }
+.panel-heading { padding-bottom: 14px; border-bottom: 1px dashed var(--border); }
+.panel-heading p { font-size: var(--fs-table); }
+table th { color: var(--text-muted); font-size: var(--fs-caption); }
+td { border-bottom-color: var(--border); }
+
+/* ---- 3. Shell: a tear-off order pad --------------------------------------- */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px dashed var(--border-strong);
+}
+.brand strong {
+  font-family: var(--serif); font-size: 21px; font-weight: 600;
+  letter-spacing: -.5px; font-variation-settings: 'opsz' 48;
+}
+.brand span { font-family: var(--mono); font-size: var(--fs-caption); letter-spacing: .06em; }
+/* The mark is a little saffron ticket with notched sides. */
+.brand-mark {
+  width: 40px; height: 34px; border-radius: 5px;
+  background: var(--brand); color: #fff;
+  -webkit-mask: radial-gradient(circle 5px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle 5px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle 5px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle 5px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
+}
+.nav-item { border-radius: var(--radius); }
+.nav-item.active { background: var(--brand-soft); color: var(--brand-strong); }
+.nav-item.active svg { color: var(--brand); }
+.status-pill { background: var(--page); font-family: var(--mono); letter-spacing: .02em; }
+
+.topbar { background: rgba(255, 253, 248, .86); border-bottom: 1px dashed var(--border-strong); }
+.breadcrumbs strong { font-family: var(--serif); font-size: 16px; font-weight: 600; }
+.date-stamp {
+  font-family: var(--mono); font-size: var(--fs-caption); font-weight: 500;
+  letter-spacing: .14em; color: var(--text-muted);
+  border: 1px dashed var(--border-strong); border-radius: 4px; padding: 4px 10px;
+}
+.actor-button { background: var(--surface); }
+.profile-avatar { background: var(--brand-soft); color: var(--brand-strong); font-family: var(--mono); }
+
+/* ---- 4. Motifs ------------------------------------------------------------ */
+/* Perforation */
+.perf { border: 0; border-top: 1px dashed var(--border-strong); margin: 14px 0; }
+
+/* Ticket: half-circle notches cut into both edges at --notch-y. */
+.ticket {
+  --notch: 9px;
+  --notch-y: 74px;
+  -webkit-mask: radial-gradient(circle var(--notch) at 0 var(--notch-y), #0000 96%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle var(--notch) at 100% var(--notch-y), #0000 96%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle var(--notch) at 0 var(--notch-y), #0000 96%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle var(--notch) at 100% var(--notch-y), #0000 96%, #000) right / 51% 100% no-repeat;
+}
+
+/* Rubber stamp */
+.stamp {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: var(--fs-caption); font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; line-height: 1.4;
+  padding: 1px 8px; border: 1.5px solid currentColor; border-radius: 4px;
+}
+.stamp.big {
+  position: absolute; top: 20px; right: 20px; z-index: 1;
+  font-size: 22px; letter-spacing: .16em; padding: 4px 14px;
+  border-width: 3px; border-radius: 6px;
+  transform: rotate(-8deg); opacity: .82; mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.stamp.paid, .stamp.ok { color: var(--success-strong); }
+.stamp.void { color: var(--danger-strong); }
+.stamp.warn { color: var(--warning-strong); }
+.stamp.info { color: var(--info-strong); }
+
+/* ---- 5. Motion ------------------------------------------------------------- */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes print { from { clip-path: inset(0 0 100% 0); transform: translateY(-14px); } to { clip-path: inset(0 0 0 0); transform: none; } }
+@keyframes stamp-land {
+  0% { opacity: 0; transform: rotate(-8deg) scale(1.9); }
+  65% { opacity: .9; transform: rotate(-8deg) scale(.94); }
+  100% { opacity: .82; transform: rotate(-8deg) scale(1); }
+}
+@keyframes pulse { from { transform: scale(.6); opacity: .55; } to { transform: scale(2.6); opacity: 0; } }
+
+/* Page sections rise in, one after another. */
+.page-content > * { animation: rise .36s var(--ease-out) both; }
+.page-content > *:nth-child(2) { animation-delay: .04s; }
+.page-content > *:nth-child(3) { animation-delay: .08s; }
+.page-content > *:nth-child(4) { animation-delay: .12s; }
+.page-content > *:nth-child(5) { animation-delay: .16s; }
+.page-content > *:nth-child(n + 6) { animation-delay: .2s; }
+
+.print { animation: print .55s var(--ease-out) both; }
+.print .stamp.big { animation: stamp-land .32s var(--ease-stamp) .45s both; }
+
+/* ---- Reduced motion: every animation lands on its final frame. ----------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .date-stamp { display: none; }
+  .page-title-row h1 { font-size: 26px; }
+  .stat-value { font-size: 24px; }
+  .stamp.big { font-size: 17px; top: 14px; right: 14px; }
+}

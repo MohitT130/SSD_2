@@ -22,7 +22,7 @@ export default function Sidebar({ page, setPage, collapsed, setCollapsed, apiSta
 
   return (
     <aside className={`sidebar ${collapsed && !mobileOpen ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
-      <div className="brand"><div className="brand-mark"><Utensils size={19} /></div>{showLabels && <div><strong>BiteStream</strong><span>Food delivery console</span></div>}</div>
+      <div className="brand"><div className="brand-mark"><Utensils size={19} /></div>{showLabels && <div><strong>BiteStream</strong><span>Kitchen console</span></div>}</div>
       {sections.map(({ caption, items }) => (
         <div key={caption} className="nav-section">
           <div className="nav-caption">{caption}</div>
