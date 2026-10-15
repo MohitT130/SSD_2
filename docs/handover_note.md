@@ -43,14 +43,14 @@ Every change is marked `[Team 26]` in the code and listed in the README change l
 | Reject `p_total_amount <= 0` inside the procedure (SQLSTATE 22023) and in the API | `sql/04_stored_procedures.sql`, `api/src/routes/checkout.js` | #2 | ✅ Done, verified |
 | Map SQLSTATE `P0001` / `23505` / `23503` / `P0002` / `55000` to friendly API errors | `api/src/errors.js` | #3 | ✅ Done, verified |
 | Restaurants seeded inside the driver-ping area (lat 17.36–17.46, lng 78.33–78.43) | `data_generation/postgres_seeder.py` | #4 | ✅ Done (PostgreSQL side) |
-| Seed `Menus`/`Reviews` with PostgreSQL restaurant UUIDs | `data_generation/mongo_seeder.py` | #5 | ⏳ Pending (Sai) |
-| Ping simulator so the map is not emptied by the 2-hour TTL | `data_generation/` or `api/` | #6 | ⏳ Pending (Sai) |
-| `$geoNear` → one row per driver → sort by distance | `mongo/02_workflow3_geonear.js` + `api/src/routes/map.js` | #7 | ⏳ Pending (Sai) |
+| Seed `Menus`/`Reviews` with PostgreSQL restaurant UUIDs | `data_generation/mongo_seeder.py` | #5 | ✅ Done, verified: every restaurant has a menu; reviews filter per restaurant |
+| Ping simulator so the map is not emptied by the 2-hour TTL | `data_generation/` or `api/` | #6 | ⏳ Not done: re-run `mongo_seeder.py` before a demo if the map is empty |
+| `$geoNear` → one row per driver → sort by distance | `mongo/02_workflow3_geonear.js` + `api/src/routes/map.js` | #7 | ✅ Done, verified: 20 distinct drivers, sorted, ≤ 5 km |
 | New `sp_advance_order_status(order_id)`; seeder keeps only the newest order of ~20% of users active (2,069 of 10,000) | `sql/07_fixes_transactions.sql`, seeder | #8, #11 | ✅ Done, verified |
 | Audit logs generated as a consistent chain per user (orders become DEBITs, plus top-up CREDITs); wallet = end of chain | `data_generation/postgres_seeder.py` | #9 | ✅ Done: 10,000/10,000 wallets match, 0 chain breaks |
 | Materialized view refreshed at the end of seeding | `data_generation/postgres_seeder.py` | #10 (empty MV) | ✅ Done |
-| "Last refreshed" timestamp stored in the database | `sql/05_materialized_views.sql` | #10 (timestamp) | ⏳ Pending (Sai) |
-| Per-restaurant 7-day moving-average series | `sql/06_window_analytics.sql` + `api/src/routes/analytics.js` | #12 | ⏳ Pending (Sai) |
+| "Last refreshed" timestamp stored in the database | `sql/05_materialized_views.sql` | #10 (timestamp) | ✅ Done, verified: `refreshed_at` column, moves forward on refresh |
+| Per-restaurant 7-day moving-average series | `api/src/routes/analytics.js` (reuses `sql/06` steps 1–4 unchanged) | #12 | ✅ Done, verified: matches an independent 7-day average |
 | `idx_wallet_audit_user_ts` on `wallet_audit_logs(user_id, timestamp DESC)` and `idx_orders_status_created_at` | `sql/07_fixes_transactions.sql` | #13 | ✅ Done: audit query now uses an index scan |
 | `DROP TABLE … CASCADE`, `CREATE INDEX IF NOT EXISTS`, `DROP TRIGGER IF EXISTS`; seeder `TRUNCATE`s first | `sql/01`–`03`, seeder | #14 | ✅ Done: all scripts re-run cleanly |
 
