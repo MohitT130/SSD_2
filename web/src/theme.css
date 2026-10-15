@@ -1,50 +1,72 @@
 /* ==========================================================================
-   BiteStream design tokens (Nisarg Bhojani, Team 26)
-   Single source of truth for colour, type and shape. Every other stylesheet
-   uses these variables instead of literal values; charts and the map read the
-   same values from theme.js. See docs/design/style_guide.md.
+   BiteStream design tokens: "Kitchen Ticket" (Nisarg Bhojani, Team 26)
+
+   Every screen is a piece of restaurant paper: an order is a kitchen order
+   ticket, the wallet is a passbook, the menu is a printed card. Paper and
+   ink set the palette, kitchen ingredients the status colours, and three
+   type voices give every element a role:
+     Fraunces (serif)       printed money, titles, scores
+     Inter (sans)           interface text
+     JetBrains Mono         ticket-printer codes, times, labels
+
+   Single source of truth; charts and the map read the same values from
+   theme.js. Contrast is checked by `npm run check:contrast`.
+   See docs/design/style_guide.md.
    ========================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  /* Brand: warm orange for a food product */
-  --brand: #E8590C;          /* accent fills: active nav marker, charts, map origin */
-  --brand-strong: #C2410C;   /* orange text and button fills (5.2:1 on white) */
+  /* Paper and ink */
+  --page: #F6EFE3;           /* warm paper */
+  --surface: #FFFDF8;        /* ticket stock */
+  --hover: #F1E8D9;
+  --border: #E4D7C3;
+  --border-strong: #D3C2A8;
+  --text: #221C17;           /* ink */
+  --text-muted: #6B5E52;
+  --text-faint: #9A8B7A;     /* icons and decoration only, never text */
+
+  /* Saffron */
+  --brand: #E8590C;
+  --brand-strong: #C2410C;
   --brand-hover: #9A3412;
-  --brand-soft: #FFF4E6;     /* active nav, selected rows */
-  --brand-line: #FFD8A8;
+  --brand-soft: #FDEFE3;
+  --brand-line: #F6C9A4;
 
-  /* Status: solid colour for dots/bars, strong for text, soft for backgrounds */
-  --success: #2F9E44;  --success-strong: #1F7A35;  --success-soft: #EBFBEE;
-  --danger: #E03131;   --danger-strong: #C92A2A;   --danger-soft: #FFF5F5;
-  --warning: #F08C00;  --warning-strong: #A35200;  --warning-soft: #FFF9DB;
-  --info: #1971C2;     --info-strong: #1864AB;     --info-soft: #E7F5FF;
+  /* Kitchen status colours: solid for marks, strong for text, soft for fills */
+  --success: #2E7D32;  --success-strong: #25672A;  --success-soft: #E7F2E3;   /* curry leaf */
+  --danger: #B23A12;   --danger-strong: #9A3110;   --danger-soft: #FBE9E2;    /* chili */
+  --warning: #B7791F;  --warning-strong: #8A5A12;  --warning-soft: #FBF0D9;   /* turmeric */
+  --info: #2B4C7E;     --info-strong: #22406B;     --info-soft: #E5ECF5;      /* indigo ink */
 
-  /* Neutrals */
-  --text: #212529;
-  --text-muted: #6C757D;     /* 4.7:1 on white */
-  --text-faint: #868E96;     /* icons and decorative text only, never body copy */
-  --surface: #FFFFFF;
-  --page: #F8F9FA;
-  --hover: #F1F3F5;
-  --border: #E9ECEF;
-  --border-strong: #DEE2E6;
+  /* Medals for the ranking board */
+  --gold: #E6C25A; --silver: #CBD2D9; --bronze: #D9A273;
 
   /* Type */
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --fs-title: 24px;   /* page title, 600 */
-  --fs-section: 18px; /* section title, 600 */
-  --fs-card: 16px;    /* card title, 600 */
+  --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --fs-display: 40px;  /* board headline figures */
+  --fs-title: 30px;    /* page title (serif) */
+  --fs-section: 18px;
+  --fs-card: 16px;
   --fs-body: 14px;
   --fs-table: 13px;
-  --fs-caption: 12px; /* smallest size used anywhere */
+  --fs-caption: 12px;  /* smallest size used anywhere */
 
   /* Shape and spacing (8 px grid) */
   --space-1: 8px; --space-2: 16px; --space-3: 24px; --space-4: 32px;
-  --radius: 8px;
-  --radius-lg: 12px;
-  --shadow: 0 1px 2px rgba(33, 37, 41, .04);
-  --shadow-pop: 0 12px 32px rgba(33, 37, 41, .14);
-  --focus: 0 0 0 3px rgba(232, 89, 12, .25);
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shadow: 0 1px 0 rgba(34, 28, 23, .04), 0 1px 2px rgba(34, 28, 23, .04);
+  --shadow-lift: 0 6px 18px rgba(34, 28, 23, .10), 0 1px 3px rgba(34, 28, 23, .06);
+  --shadow-pop: 0 18px 40px rgba(34, 28, 23, .18);
+  --focus: 0 0 0 3px rgba(232, 89, 12, .28);
+
+  /* Motion */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-stamp: cubic-bezier(.3, 1.6, .5, 1);
+
+  /* Paper grain (tiny inline SVG noise, about 2 % visible) */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .13 0 0 0 0 .11 0 0 0 0 .09 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }

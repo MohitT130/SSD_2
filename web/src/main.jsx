@@ -5,4 +5,5 @@ import 'leaflet/dist/leaflet.css';
 import './theme.css';
 import './styles.css';
 import './screens.css';
+import './kitchen.css';
 createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>);
