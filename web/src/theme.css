@@ -1,0 +1,50 @@
+/* ==========================================================================
+   BiteStream design tokens (Nisarg Bhojani, Team 26)
+   Single source of truth for colour, type and shape. Every other stylesheet
+   uses these variables instead of literal values; charts and the map read the
+   same values from theme.js. See docs/design/style_guide.md.
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Brand: warm orange for a food product */
+  --brand: #E8590C;          /* accent fills: active nav marker, charts, map origin */
+  --brand-strong: #C2410C;   /* orange text and button fills (5.2:1 on white) */
+  --brand-hover: #9A3412;
+  --brand-soft: #FFF4E6;     /* active nav, selected rows */
+  --brand-line: #FFD8A8;
+
+  /* Status: solid colour for dots/bars, strong for text, soft for backgrounds */
+  --success: #2F9E44;  --success-strong: #1F7A35;  --success-soft: #EBFBEE;
+  --danger: #E03131;   --danger-strong: #C92A2A;   --danger-soft: #FFF5F5;
+  --warning: #F08C00;  --warning-strong: #A35200;  --warning-soft: #FFF9DB;
+  --info: #1971C2;     --info-strong: #1864AB;     --info-soft: #E7F5FF;
+
+  /* Neutrals */
+  --text: #212529;
+  --text-muted: #6C757D;     /* 4.7:1 on white */
+  --text-faint: #868E96;     /* icons and decorative text only, never body copy */
+  --surface: #FFFFFF;
+  --page: #F8F9FA;
+  --hover: #F1F3F5;
+  --border: #E9ECEF;
+  --border-strong: #DEE2E6;
+
+  /* Type */
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --fs-title: 24px;   /* page title, 600 */
+  --fs-section: 18px; /* section title, 600 */
+  --fs-card: 16px;    /* card title, 600 */
+  --fs-body: 14px;
+  --fs-table: 13px;
+  --fs-caption: 12px; /* smallest size used anywhere */
+
+  /* Shape and spacing (8 px grid) */
+  --space-1: 8px; --space-2: 16px; --space-3: 24px; --space-4: 32px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 1px 2px rgba(33, 37, 41, .04);
+  --shadow-pop: 0 12px 32px rgba(33, 37, 41, .14);
+  --focus: 0 0 0 3px rgba(232, 89, 12, .25);
+}
