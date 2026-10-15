@@ -47,8 +47,8 @@ export const api = {
   checkout:(body)=>request('/checkout',{method:'POST',body:JSON.stringify(body)}),
 
   // Analytics, Map, Reviews
-  movingAverage:()=>request('/analytics/moving-average'),
-  rankings:()=>request('/analytics/rankings'),
+  movingAverage:(restaurantId)=>request(`/analytics/moving-average${qs({ restaurantId })}`),
+  rankings:(params={})=>request(`/analytics/rankings${qs(params)}`),
   summary:()=>request('/analytics/summary'),
   refresh:()=>request('/analytics/refresh',{method:'POST'}),
   nearby:(lat,lng,radiusKm=5)=>request(`/map/nearby?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`),
