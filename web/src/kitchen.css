@@ -1,0 +1,329 @@
+/* ==========================================================================
+   Kitchen Ticket: the concept layer (Nisarg Bhojani, Team 26)
+
+   styles.css and screens.css lay the screens out; this file gives them their
+   voice. Every screen is a piece of restaurant paper:
+     order    -> kitchen order ticket (KOT): notched, perforated, stamped
+     wallet   -> bank passbook: ruled ledger, printed amounts
+     analytics-> the day's board: big printed figures, medals
+     map      -> dispatch slips
+     menu     -> a printed menu card with dotted leaders
+   Sections: 1 type roles · 2 paper surfaces · 3 shell · 4 motifs · 5 motion
+             6+ signature moments per screen · reduced motion at the end.
+   ========================================================================== */
+
+/* ---- 1. Type roles -------------------------------------------------------- */
+/* Serif = printed (titles, money, scores) · Mono = ticket printer (codes,
+   times, labels) · Inter = everything you interact with. */
+body {
+  background-color: var(--page);
+  background-image: var(--grain);
+}
+.page-title-row h1 {
+  font-family: var(--serif);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  letter-spacing: -.2px;
+  word-spacing: .06em;
+  font-variation-settings: 'opsz' 60;
+  line-height: 1.1;
+}
+.eyebrow {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: var(--fs-caption); font-weight: 500;
+  letter-spacing: .14em; color: var(--brand-strong); margin-bottom: 8px;
+}
+.eyebrow::before { content: ''; width: 20px; height: 1.5px; background: currentColor; }
+.nav-caption, th, .acting-label, .actor-menu-caption {
+  font-family: var(--mono); font-weight: 500; letter-spacing: .12em;
+}
+.panel-heading h2 {
+  font-family: var(--serif); font-size: 19px; font-weight: 600;
+  letter-spacing: -.3px; font-variation-settings: 'opsz' 36;
+}
+.stat-value, .serif {
+  font-family: var(--serif);
+  font-variation-settings: 'opsz' 72;
+  font-weight: 600;
+  letter-spacing: -.6px;
+}
+.stat-value { font-size: 32px; margin-top: 12px; letter-spacing: -.2px; }
+.stat-detail, .mono-label, .mono, .pagination, .page-indicator {
+  font-family: var(--mono); letter-spacing: .02em;
+}
+.mono { color: var(--text-muted); }
+code { background: var(--hover); color: var(--text); border: 1px solid var(--border); padding: 0 5px; }
+
+/* ---- 2. Paper surfaces -------------------------------------------------- */
+.panel, .stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+/* Each stat card is a small receipt: label, perforation, printed figure. */
+.stat-top { padding-bottom: 12px; border-bottom: 1px dashed var(--border-strong); color: var(--text-muted); }
+.stat-icon { color: var(--brand); }
+.panel-heading { padding-bottom: 14px; border-bottom: 1px dashed var(--border); }
+.panel-heading p { font-size: var(--fs-table); }
+table th { color: var(--text-muted); font-size: var(--fs-caption); }
+td { border-bottom-color: var(--border); }
+
+/* ---- 3. Shell: a tear-off order pad --------------------------------------- */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px dashed var(--border-strong);
+}
+.brand strong {
+  font-family: var(--serif); font-size: 21px; font-weight: 600;
+  letter-spacing: -.5px; font-variation-settings: 'opsz' 48;
+}
+.brand span { font-family: var(--mono); font-size: var(--fs-caption); letter-spacing: .06em; }
+/* The mark is a little saffron ticket with notched sides. */
+.brand-mark {
+  width: 40px; height: 34px; border-radius: 5px;
+  background: var(--brand); color: #fff;
+  -webkit-mask: radial-gradient(circle 5px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle 5px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle 5px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle 5px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
+}
+.nav-item { border-radius: var(--radius); }
+.nav-item.active { background: var(--brand-soft); color: var(--brand-strong); }
+.nav-item.active svg { color: var(--brand); }
+.status-pill { background: var(--page); font-family: var(--mono); letter-spacing: .02em; }
+
+.topbar { background: rgba(255, 253, 248, .86); border-bottom: 1px dashed var(--border-strong); }
+.breadcrumbs strong { font-family: var(--serif); font-size: 16px; font-weight: 600; }
+.date-stamp {
+  font-family: var(--mono); font-size: var(--fs-caption); font-weight: 500;
+  letter-spacing: .14em; color: var(--text-muted);
+  border: 1px dashed var(--border-strong); border-radius: 4px; padding: 4px 10px;
+}
+.actor-button { background: var(--surface); }
+.profile-avatar { background: var(--brand-soft); color: var(--brand-strong); font-family: var(--mono); }
+
+/* ---- 4. Motifs ------------------------------------------------------------ */
+/* Perforation */
+.perf { border: 0; border-top: 1px dashed var(--border-strong); margin: 14px 0; }
+
+/* Ticket: half-circle notches cut into both edges at --notch-y. */
+.ticket {
+  --notch: 9px;
+  --notch-y: 74px;
+  -webkit-mask: radial-gradient(circle var(--notch) at 0 var(--notch-y), #0000 96%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle var(--notch) at 100% var(--notch-y), #0000 96%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle var(--notch) at 0 var(--notch-y), #0000 96%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle var(--notch) at 100% var(--notch-y), #0000 96%, #000) right / 51% 100% no-repeat;
+}
+
+/* Rubber stamp */
+.stamp {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: var(--fs-caption); font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; line-height: 1.4;
+  padding: 1px 8px; border: 1.5px solid currentColor; border-radius: 4px;
+}
+.stamp.big {
+  position: absolute; top: 20px; right: 20px; z-index: 1;
+  font-size: 22px; letter-spacing: .16em; padding: 4px 14px;
+  border-width: 3px; border-radius: 6px;
+  transform: rotate(-8deg); opacity: .82; mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.stamp.paid, .stamp.ok { color: var(--success-strong); }
+.stamp.void { color: var(--danger-strong); }
+.stamp.warn { color: var(--warning-strong); }
+.stamp.info { color: var(--info-strong); }
+
+/* ---- 5. Motion ------------------------------------------------------------- */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes print { from { clip-path: inset(0 0 100% 0); transform: translateY(-14px); } to { clip-path: inset(0 0 0 0); transform: none; } }
+@keyframes stamp-land {
+  0% { opacity: 0; transform: rotate(-8deg) scale(1.9); }
+  65% { opacity: .9; transform: rotate(-8deg) scale(.94); }
+  100% { opacity: .82; transform: rotate(-8deg) scale(1); }
+}
+@keyframes pulse { from { transform: scale(.6); opacity: .55; } to { transform: scale(2.6); opacity: 0; } }
+
+/* Page sections rise in, one after another. */
+.page-content > * { animation: rise .36s var(--ease-out) both; }
+.page-content > *:nth-child(2) { animation-delay: .04s; }
+.page-content > *:nth-child(3) { animation-delay: .08s; }
+.page-content > *:nth-child(4) { animation-delay: .12s; }
+.page-content > *:nth-child(5) { animation-delay: .16s; }
+.page-content > *:nth-child(n + 6) { animation-delay: .2s; }
+
+.print { animation: print .55s var(--ease-out) both; }
+.print .stamp.big { animation: stamp-land .32s var(--ease-stamp) .45s both; }
+
+/* ---- 6. Browse: the ticket rail ------------------------------------------- */
+/* Statuses and wallet actions are stamped, not badged. */
+.status-badge, .action-badge {
+  background: transparent !important;
+  border: 1.5px solid currentColor; border-radius: 4px;
+  padding: 1px 8px; font-family: var(--mono); font-size: var(--fs-caption);
+  font-weight: 600; letter-spacing: .08em;
+}
+.status-badge::before { display: none; }
+.tabs { background: var(--hover); border: 1px solid var(--border); }
+.tab.active { background: var(--surface); box-shadow: 0 1px 2px rgba(34, 28, 23, .12); }
+.data-table.clickable tbody tr, .clickable-rows tbody tr { transition: transform .18s var(--ease-out), box-shadow .18s var(--ease-out); }
+.data-table.clickable tbody tr:hover, .clickable-rows tbody tr:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lift);
+}
+.data-table.clickable tbody tr:hover td, .clickable-rows tbody tr:hover td { background: var(--surface); }
+.money-cell { font-variant-numeric: tabular-nums; }
+.drawer { background: var(--surface); }
+.drawer-header h2 { font-family: var(--serif); font-size: 22px; font-weight: 600; letter-spacing: -.4px; }
+.detail-list > div { border-bottom: 1px dashed var(--border-strong); }
+
+/* ---- 7. Place order: the kitchen order ticket ---------------------------- */
+.chip { font-family: var(--mono); font-size: var(--fs-caption); }
+.readonly-field { background: var(--page); border-style: dashed; }
+.warning-box { border-style: dashed; }
+.result-panel { position: relative; }
+.result-panel.success, .result-panel.failure {
+  --notch-y: 82px;
+  background: var(--surface);
+  border-color: var(--border-strong);
+}
+.result-panel.success .panel-heading, .result-panel.failure .panel-heading { padding-right: 120px; }
+.result-heading { font-family: var(--serif); font-size: 20px; font-weight: 600; letter-spacing: -.3px; }
+.ticket-amount { font-size: 24px; font-weight: 600; color: var(--text); }
+.result-panel .highlight-row td { background: var(--success-soft); }
+.result-panel .subsection { padding-top: 16px; border-top: 1px dashed var(--border-strong); }
+.result-panel .drawer-actions { padding-top: 16px; border-top: 1px dashed var(--border-strong); }
+
+/* ---- 8. Wallet history: the passbook ------------------------------------- */
+.ledger thead th { border-bottom: 2px solid var(--text); color: var(--text); }
+.ledger td:first-child { font-family: var(--mono); font-size: var(--fs-caption); color: var(--text-muted); }
+.ledger .money-cell { font-family: var(--serif); font-size: 15px; font-weight: 600; font-variation-settings: 'opsz' 24; }
+.ledger tbody tr:nth-child(even) td { background: rgba(241, 232, 217, .45); }
+/* The red double margin rule of a passbook, before the amount columns. */
+.ledger th:nth-child(3), .ledger td:nth-child(3) { border-left: 3px double rgba(178, 58, 18, .35); }
+.ledger th:last-child, .ledger td:last-child { border-left: 1px dashed var(--border-strong); }
+
+/* ---- 9. Analytics: the day's board ---------------------------------------- */
+.board .stat-value { font-size: var(--fs-display); letter-spacing: -.3px; font-variation-settings: 'opsz' 72; }
+/* The chart stays beside the ranking while you scroll and click rows. */
+@media (min-width: 1200px) {
+  .analytics-grid > .panel:first-child { position: sticky; top: 88px; }
+}
+.rank-number {
+  border-radius: 50%; min-width: 30px; height: 30px;
+  font-family: var(--serif); font-size: 14px; font-weight: 600;
+  background: var(--hover); color: var(--text-muted);
+}
+.rank-number.medal-1 { background: var(--gold); color: #3D2E05; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45); }
+.rank-number.medal-2 { background: var(--silver); color: #283037; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45); }
+.rank-number.medal-3 { background: var(--bronze); color: #3A2110; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45); }
+.clickable-rows tbody tr.selected td { background: var(--brand-soft); }
+.clickable-rows tbody tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
+.snapshot-panel { border-style: dashed; background: var(--page); box-shadow: none; }
+.recharts-default-tooltip { font-family: var(--font); }
+
+/* ---- 10. Driver map: dispatch slips ---------------------------------------- */
+/* Warm the OpenStreetMap tiles so the map sits on the same paper. */
+.leaflet-tile-pane { filter: sepia(.3) saturate(.82) hue-rotate(-6deg) brightness(1.02) contrast(.95); }
+.leaflet-frame { border-color: var(--border-strong); border-radius: var(--radius); }
+.origin-marker-wrap::before {
+  content: ''; position: absolute; left: 50%; top: 100%;
+  width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%;
+  background: rgba(232, 89, 12, .35);
+  animation: pulse 2s var(--ease-out) infinite;
+}
+.driver-list { gap: 8px; padding: 2px 2px 6px; }
+.driver-row {
+  --notch: 6px; --notch-y: 50%;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); padding: 10px 16px;
+  transition: transform .18s var(--ease-out), border-color .18s;
+}
+.driver-row:hover { transform: translateX(2px); border-color: var(--border-strong); background: var(--surface); }
+.driver-row.selected { border-color: var(--brand-line); background: var(--brand-soft); }
+.driver-avatar { font-family: var(--mono); border-radius: 4px; background: var(--info-soft); color: var(--info-strong); }
+.driver-info strong { font-family: var(--mono); font-size: var(--fs-table); font-weight: 600; letter-spacing: .04em; }
+.driver-distance { font-family: var(--serif); font-size: 17px; font-weight: 600; }
+.radius-chip, .map-legend, .map-list-footer { font-family: var(--mono); }
+.legend-driver { background: var(--info); }
+
+/* ---- 11. Reviews & menus: the printed menu card --------------------------- */
+.score-block {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 18px 10px 14px; border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg); background: var(--surface);
+}
+.score {
+  font-family: var(--serif); font-size: 48px; font-weight: 600; line-height: 1;
+  letter-spacing: -1px; font-variation-settings: 'opsz' 144;
+}
+.score-side { display: grid; gap: 6px; }
+.score-stars { display: flex; gap: 2px; color: var(--warning); }
+.score-caption { font-family: var(--mono); font-size: var(--fs-caption); color: var(--text-muted); }
+.rating-track div { background: var(--warning); }
+
+.menu-print {
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 4px;
+  outline: 1px solid var(--border); outline-offset: -8px;
+  padding: 32px clamp(18px, 4vw, 48px) 28px;
+}
+.menu-print-head { display: grid; justify-items: center; gap: 6px; text-align: center; padding-bottom: 8px; }
+.menu-print-head strong {
+  font-family: var(--serif); font-size: 32px; font-weight: 600; letter-spacing: -.4px;
+  font-variation-settings: 'opsz' 96;
+}
+.menu-print-kicker { font-family: var(--mono); font-size: var(--fs-caption); letter-spacing: .2em; text-transform: uppercase; color: var(--text-muted); }
+.menu-accordion details { border: 0; border-radius: 0; overflow: visible; }
+.menu-accordion summary {
+  justify-content: center; gap: 14px; padding: 22px 0 6px; background: transparent;
+  font-family: var(--mono); font-size: var(--fs-caption); font-weight: 600;
+  letter-spacing: .22em; text-transform: uppercase; color: var(--brand-strong);
+}
+.menu-accordion summary::before, .menu-accordion summary::after {
+  content: ''; flex: 1; border-top: 1px solid var(--border-strong); margin: 0; transform: none;
+}
+.menu-accordion details[open] summary::before { transform: none; }
+.menu-accordion summary span { flex: 0 0 auto; }
+.menu-accordion summary small { order: 3; letter-spacing: .04em; text-transform: none; font-weight: 400; }
+.menu-accordion summary small::after { content: ' ▾'; }
+.menu-accordion details:not([open]) summary small::after { content: ' ▸'; }
+.menu-accordion ul { padding: 0; }
+.menu-item { display: block; border-top: 0; padding: 10px 0; }
+.menu-item-main { gap: 6px; }
+.menu-line { display: flex; align-items: baseline; gap: 10px; }
+.menu-line strong {
+  min-width: 0; font-family: var(--serif); font-size: 17px; font-weight: 500;
+  font-variation-settings: 'opsz' 24;
+}
+.leader { flex: 1; min-width: 24px; border-bottom: 2px dotted var(--border-strong); transform: translateY(-4px); }
+.menu-price { font-family: var(--serif); font-size: 16px; font-weight: 600; }
+.menu-badge { font-family: var(--mono); font-size: var(--fs-caption); border-radius: 4px; }
+.menu-addons { font-size: var(--fs-caption); }
+
+/* ---- Reduced motion: every animation lands on its final frame. ----------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .date-stamp { display: none; }
+  /* Board figures shrink with the screen instead of breaking mid-number. */
+  .board .stat-value { font-size: clamp(20px, 6.2vw, 28px); white-space: nowrap; overflow-wrap: normal; }
+  /* Top bar on phones: one line each for title and actor; the active-order
+     note becomes a dot so the picker never grows taller than the bar. */
+  .breadcrumbs { min-width: 0; overflow: hidden; }
+  .breadcrumbs strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .actor-button .profile-copy span { white-space: nowrap; }
+  .actor-button .active-dot { font-size: 0; }
+  .actor-button .active-dot::after { content: '●'; font-size: 10px; margin-left: 6px; color: var(--warning); }
+  .page-title-row h1 { font-size: 26px; }
+  .stat-value { font-size: 24px; }
+  .stamp.big { font-size: 17px; top: 14px; right: 14px; }
+}

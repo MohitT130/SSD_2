@@ -34,7 +34,9 @@ export default function AdvanceButton({ order, onAdvanced, compact = false }) {
   return (
     <div className="advance-box">
       <ErrorBanner message={error} />
-      <button className="button primary" onClick={advance} disabled={busy}>
+      {/* type="button": this also renders inside the Place order form, where a
+          default (submit) button would place a new order on every click. */}
+      <button type="button" className="button primary" onClick={advance} disabled={busy}>
         <ChevronsRight size={15} /> {busy ? 'Updating…' : `Advance to ${next}`}
       </button>
       {!compact && (

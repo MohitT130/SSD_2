@@ -6,7 +6,11 @@ SELECT
     r.id AS restaurant_id,
     r.name AS restaurant_name,
     COALESCE(SUM(o.total_amount), 0)::DECIMAL(12,2) AS completed_revenue,
-    COUNT(o.id) AS completed_order_count
+    COUNT(o.id) AS completed_order_count,
+    -- [Team 26] PostgreSQL keeps no refresh time for a materialized view.
+    -- NOW() is re-evaluated on every REFRESH, so this column records when
+    -- the snapshot was last rebuilt ("last refreshed" on the Analytics screen).
+    NOW() AS refreshed_at
 FROM restaurants r
 LEFT JOIN orders o
     ON r.id = o.restaurant_id

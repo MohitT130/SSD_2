@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar.jsx';
 import ActorPicker from './components/ActorPicker.jsx';
 import Browse from './pages/Browse.jsx';
@@ -10,6 +11,12 @@ import Reviews from './pages/Reviews.jsx';
 import { ActorProvider } from './context/ActorContext.jsx';
 import { navigate, useHashRoute } from './router';
 import { api } from './services/api';
+
+// Printed like the date line on a kitchen ticket: "THU · 15 OCT".
+const TODAY = new Date()
+  .toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })
+  .replace(',', ' ·')
+  .toUpperCase();
 
 const pages = {
   browse: { name: 'Browse', component: Browse },
@@ -23,9 +30,19 @@ const pages = {
 export default function App() {
   const route = useHashRoute();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState('checking');
   const page = pages[route.page] ? route.page : 'browse';
   const Page = pages[page].component;
+
+  // Phone navigation drawer: closes on Esc and whenever the page changes.
+  useEffect(() => setMobileNavOpen(false), [page]);
+  useEffect(() => {
+    if (!mobileNavOpen) return undefined;
+    const onKey = (event) => event.key === 'Escape' && setMobileNavOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mobileNavOpen]);
 
   useEffect(() => {
     const check = () => api.health().then(() => setApiStatus('ok')).catch(() => setApiStatus('down'));
@@ -37,11 +54,23 @@ export default function App() {
   return (
     <ActorProvider>
       <div className="app-shell">
-        <Sidebar page={page} setPage={(id) => navigate(id)} collapsed={collapsed} setCollapsed={setCollapsed} apiStatus={apiStatus} />
+        <Sidebar
+          page={page}
+          setPage={(id) => { navigate(id); setMobileNavOpen(false); }}
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          apiStatus={apiStatus}
+          mobileOpen={mobileNavOpen}
+        />
+        {mobileNavOpen && <div className="nav-backdrop" onClick={() => setMobileNavOpen(false)} aria-hidden="true" />}
         <main className="main-area">
           <header className="topbar">
-            <div className="breadcrumbs"><span>Workspace</span><span className="crumb-slash">/</span><strong>{pages[page].name}</strong></div>
+            <button className="icon-button burger" onClick={() => setMobileNavOpen(true)} aria-label="Open menu" aria-expanded={mobileNavOpen}>
+              <Menu size={22} />
+            </button>
+            <div className="breadcrumbs"><span>BiteStream</span><span className="crumb-slash">/</span><strong>{pages[page].name}</strong></div>
             <div className="topbar-actions">
+              <span className="date-stamp" title="Today">{TODAY}</span>
               <span className="acting-label">Acting as</span>
               <ActorPicker />
             </div>

@@ -185,14 +185,15 @@ function SuccessPanel({ data }) {
   const { order, auditEntry } = data;
 
   return (
-    <Panel title="Order placed" subtitle="Committed by sp_execute_checkout" className="result-panel success">
+    <Panel title="Order placed" subtitle="Committed by sp_execute_checkout" className="result-panel success ticket print">
+      <span className="stamp paid big" aria-hidden="true">Paid</span>
       <div className="result-heading success"><CheckCircle2 size={20} /> Payment taken and order created</div>
 
       {order && (
         <DetailList items={[
-          ['Order', shortId(order.id)],
+          ['Order', <span key="o" className="mono">#{shortId(order.id).replace('…', '').toUpperCase()}</span>],
           ['Restaurant', order.restaurant_name],
-          ['Amount', money(order.total_amount)],
+          ['Amount', <span key="a" className="serif ticket-amount">{money(order.total_amount)}</span>],
           ['Status', <StatusBadge key="s" status={order.status} />],
         ]} />
       )}
@@ -244,7 +245,8 @@ function FailurePanel({ error, actor }) {
   const Icon = error.code === 'ACTIVE_ORDER_EXISTS' ? CircleSlash : XCircle;
 
   return (
-    <Panel title="Order not placed" subtitle={known ? 'Refused by the database — nothing was charged' : 'The request failed'} className="result-panel failure">
+    <Panel title="Order not placed" subtitle={known ? 'Refused by the database — nothing was charged' : 'The request failed'} className="result-panel failure ticket print">
+      <span className="stamp void big" aria-hidden="true">Void</span>
       <div className="result-heading failure"><Icon size={20} /> {known ? known.title : 'Something went wrong'}</div>
       <p className="result-message">{error.message}</p>
       {known && <p className="hint">Why: {known.why}</p>}

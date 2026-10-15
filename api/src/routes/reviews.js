@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getMongoDb } from '../db.js';
 import { demoReviews, demoMenus } from '../demo.js';
+import { ApiError, requireUuid } from '../errors.js';
 
 const router = Router();
 
@@ -16,11 +17,17 @@ router.get('/analytics', async (req, res, next) => {
   }
 
   try {
+    // Optional: narrow Workflow 4 to one restaurant. The $match runs before
+    // $facet, so every facet sees only that restaurant's reviews.
+    const restaurantId = req.query.restaurantId
+      ? requireUuid(req.query.restaurantId, 'Restaurant id')
+      : null;
     const db = await getMongoDb();
 
     const [facet] = await db
       .collection(reviewCollection())
       .aggregate([
+        ...(restaurantId ? [{ $match: { restaurant_id: restaurantId } }] : []),
         {
           $facet: {
             ratingDistribution: [
@@ -116,9 +123,17 @@ router.get('/menus', async (req, res, next) => {
 
   try {
     const db = await getMongoDb();
+    const collection = db.collection(process.env.MENUS_COLLECTION || 'Menus');
 
-    const data = await db
-      .collection(process.env.MENUS_COLLECTION || 'Menus')
+    // GET /api/reviews/menus?restaurantId=<uuid>: that restaurant's menu.
+    if (req.query.restaurantId !== undefined) {
+      const restaurantId = requireUuid(req.query.restaurantId, 'Restaurant id');
+      const menu = await collection.findOne({ restaurant_id: restaurantId }, { projection: { _id: 0 } });
+      if (!menu) throw new ApiError(404, 'MENU_NOT_FOUND', 'This restaurant has no menu yet.');
+      return res.json({ data: menu, source: 'mongodb' });
+    }
+
+    const data = await collection
       .find({})
       .limit(100)
       .toArray();
