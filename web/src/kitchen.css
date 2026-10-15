@@ -47,7 +47,7 @@ body {
   font-weight: 600;
   letter-spacing: -.6px;
 }
-.stat-value { font-size: 32px; margin-top: 12px; }
+.stat-value { font-size: 32px; margin-top: 12px; letter-spacing: -.2px; }
 .stat-detail, .mono-label, .mono, .pagination, .page-indicator {
   font-family: var(--mono); letter-spacing: .02em;
 }
@@ -204,6 +204,25 @@ td { border-bottom-color: var(--border); }
 /* The red double margin rule of a passbook, before the amount columns. */
 .ledger th:nth-child(3), .ledger td:nth-child(3) { border-left: 3px double rgba(178, 58, 18, .35); }
 .ledger th:last-child, .ledger td:last-child { border-left: 1px dashed var(--border-strong); }
+
+/* ---- 9. Analytics: the day's board ---------------------------------------- */
+.board .stat-value { font-size: var(--fs-display); letter-spacing: -.3px; font-variation-settings: 'opsz' 72; }
+/* The chart stays beside the ranking while you scroll and click rows. */
+@media (min-width: 1200px) {
+  .analytics-grid > .panel:first-child { position: sticky; top: 88px; }
+}
+.rank-number {
+  border-radius: 50%; min-width: 30px; height: 30px;
+  font-family: var(--serif); font-size: 14px; font-weight: 600;
+  background: var(--hover); color: var(--text-muted);
+}
+.rank-number.medal-1 { background: var(--gold); color: #3D2E05; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45); }
+.rank-number.medal-2 { background: var(--silver); color: #283037; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45); }
+.rank-number.medal-3 { background: var(--bronze); color: #3A2110; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45); }
+.clickable-rows tbody tr.selected td { background: var(--brand-soft); }
+.clickable-rows tbody tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
+.snapshot-panel { border-style: dashed; background: var(--page); box-shadow: none; }
+.recharts-default-tooltip { font-family: var(--font); }
 
 /* ---- Reduced motion: every animation lands on its final frame. ----------- */
 @media (prefers-reduced-motion: reduce) {

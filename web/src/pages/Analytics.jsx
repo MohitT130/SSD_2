@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BarChart3, IndianRupee, RefreshCw, ShoppingBag, Store, TrendingUp, Database } from 'lucide-react';
-import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api } from '../services/api';
 import StatCard from '../components/StatCard';
 import Panel from '../components/Panel';
@@ -107,11 +107,11 @@ export default function Analytics() {
 
       <ErrorBanner message={summaryError} onRetry={loadSummary} />
 
-      <div className="stats-grid">
-        <StatCard label="Completed revenue" value={summary ? rupees(summary.total_revenue) : '—'} detail="Delivered orders only" icon={IndianRupee} />
-        <StatCard label="Completed orders" value={summary ? Number(summary.orders_processed).toLocaleString('en-IN') : '—'} detail="Status DELIVERED" icon={ShoppingBag} />
-        <StatCard label="Average order value" value={summary ? rupees(summary.average_order_value) : '—'} detail="Revenue ÷ orders" icon={TrendingUp} />
-        <StatCard label="Restaurants" value={summary ? Number(summary.restaurants).toLocaleString('en-IN') : '—'} detail="Rows in the view" icon={Store} />
+      <div className="stats-grid board">
+        <StatCard label="Completed revenue" value="—" countTo={summary ? Number(summary.total_revenue) : undefined} format={rupees} detail="Delivered orders only" icon={IndianRupee} />
+        <StatCard label="Completed orders" value="—" countTo={summary ? Number(summary.orders_processed) : undefined} detail="Status DELIVERED" icon={ShoppingBag} />
+        <StatCard label="Average order value" value="—" countTo={summary ? Number(summary.average_order_value) : undefined} format={rupees} detail="Revenue ÷ orders" icon={TrendingUp} />
+        <StatCard label="Restaurants" value="—" countTo={summary ? Number(summary.restaurants) : undefined} detail="Rows in the view" icon={Store} />
       </div>
 
       <Panel className="snapshot-panel">
@@ -132,7 +132,7 @@ export default function Analytics() {
           <div className="chart-toolbar">
             <RestaurantPicker value={restaurant} onChange={setRestaurant} />
             <div className="chart-legend">
-              <span><i className="legend-swatch" style={{ background: colors.brandLine }} />Daily revenue</span>
+              <span><i className="legend-swatch" style={{ background: colors.border }} />Daily revenue</span>
               <span><i className="legend-swatch line" style={{ background: colors.brandStrong }} />7-day average</span>
             </div>
           </div>
@@ -145,8 +145,14 @@ export default function Analytics() {
           ) : (
             <>
               <ResponsiveContainer width="100%" height={300}>
-                <ComposedChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke={colors.grid} />
+                <ComposedChart data={series} margin={{ top: 8, right: 20, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="avgInk" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={colors.brand} stopOpacity={0.22} />
+                      <stop offset="100%" stopColor={colors.brand} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke={colors.grid} strokeDasharray="2 4" />
                   <XAxis dataKey="order_date" tickFormatter={shortDate} tick={chartTick} axisLine={false} tickLine={false} minTickGap={24} dy={6} />
                   <YAxis tickFormatter={(v) => (v >= 1000 ? `₹${Math.round(v / 1000)}k` : `₹${v}`)} tick={chartTick} axisLine={false} tickLine={false} width={52} />
                   <Tooltip
@@ -155,8 +161,9 @@ export default function Analytics() {
                     formatter={(value, name) => [rupees(value), name]}
                     cursor={{ fill: colors.grid }}
                   />
-                  <Bar dataKey="daily_revenue" name="Daily revenue" fill={colors.brandLine} radius={[3, 3, 0, 0]} maxBarSize={18} />
-                  <Line dataKey="moving_average_7_day" name="7-day average" type="monotone" stroke={colors.brandStrong} strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                  <Bar dataKey="daily_revenue" name="Daily revenue" fill={colors.border} radius={[2, 2, 0, 0]} maxBarSize={16} />
+                  <Area dataKey="moving_average_7_day" type="monotone" stroke="none" fill="url(#avgInk)" legendType="none" tooltipType="none" isAnimationActive={false} />
+                  <Line dataKey="moving_average_7_day" name="7-day average" type="monotone" stroke={colors.brandStrong} strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: colors.brand, stroke: colors.paper, strokeWidth: 2 }} />
                 </ComposedChart>
               </ResponsiveContainer>
               {noRevenue && <p className="hint">No delivered orders for this restaurant in the last 30 days.</p>}
@@ -180,7 +187,7 @@ export default function Analytics() {
                     tabIndex={0}
                     onKeyDown={(e) => e.key === 'Enter' && setRestaurant({ id: row.restaurant_id, name: row.restaurant_name })}
                   >
-                    <td><span className={`rank-number ${Number(row.revenue_rank) <= 3 ? 'top' : ''}`}>{row.revenue_rank}</span></td>
+                    <td><span className={`rank-number ${Number(row.revenue_rank) <= 3 ? `top medal-${row.revenue_rank}` : ''}`}>{row.revenue_rank}</span></td>
                     <td><strong>{row.restaurant_name}</strong><small>as of {shortDate(row.order_date)}</small></td>
                     <td className="money-cell">{rupees(row.moving_average_7_day)}</td>
                     <td className="num">{rupees(row.daily_revenue)}</td>
