@@ -111,3 +111,42 @@ describe('Driver map: Workflow 3 ($geoNear)', () => {
     assert.deepEqual(body.data, []);
   });
 });
+
+describe('Reviews & menus: Workflow 4 ($facet)', () => {
+  test('rating distribution adds up to the review count and the average is between 1 and 5', async () => {
+    const { status, body } = await api('GET', '/reviews/analytics');
+    assert.equal(status, 200);
+    const sum = body.data.distribution.reduce((total, row) => total + row.count, 0);
+    assert.equal(sum, body.data.totalReviews);
+    assert.ok(body.data.averageRating >= 1 && body.data.averageRating <= 5);
+  });
+
+  test('the restaurant filter narrows the facet to that restaurant', async () => {
+    const id = (await getPgPool().query('SELECT id FROM restaurants ORDER BY id LIMIT 1')).rows[0].id;
+    const all = (await api('GET', '/reviews/analytics')).body.data;
+    const { status, body } = await api('GET', `/reviews/analytics?restaurantId=${id}`);
+    assert.equal(status, 200);
+    assert.ok(body.data.totalReviews > 0, 'reviews must be linked to PostgreSQL restaurants');
+    assert.ok(body.data.totalReviews < all.totalReviews);
+
+    const malformed = await api('GET', '/reviews/analytics?restaurantId=abc');
+    assert.equal(malformed.status, 400);
+    assert.equal(malformed.body.code, 'INVALID_ID');
+  });
+
+  test('menus: a known restaurant has one, an unknown one is 404, a malformed id is 400', async () => {
+    const r = (await getPgPool().query('SELECT id, name FROM restaurants ORDER BY id LIMIT 1')).rows[0];
+    const known = await api('GET', `/reviews/menus?restaurantId=${r.id}`);
+    assert.equal(known.status, 200);
+    assert.equal(known.body.data.restaurant_id, r.id);
+    assert.equal(known.body.data.restaurant_name, r.name);
+    assert.ok(known.body.data.categories.length > 0);
+
+    const unknown = await api('GET', `/reviews/menus?restaurantId=${UNKNOWN_UUID}`);
+    assert.equal(unknown.status, 404);
+    assert.equal(unknown.body.code, 'MENU_NOT_FOUND');
+
+    const malformed = await api('GET', '/reviews/menus?restaurantId=abc');
+    assert.equal(malformed.status, 400);
+  });
+});
