@@ -52,6 +52,7 @@ export const api = {
   summary:()=>request('/analytics/summary'),
   refresh:()=>request('/analytics/refresh',{method:'POST'}),
   nearby:(lat,lng,radiusKm=5)=>request(`/map/nearby?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`),
-  reviewAnalytics:()=>request('/reviews/analytics'),
+  reviewAnalytics:(restaurantId)=>request(`/reviews/analytics${qs({ restaurantId })}`),
+  menu:(restaurantId)=>request(`/reviews/menus${qs({ restaurantId })}`),
   menus:()=>request('/reviews/menus')
 };
