@@ -39,9 +39,11 @@ A web front end for the inherited **BiteStream** food-delivery backend (PostgreS
 
 **Demo user switching:** the header's **"Acting as"** picker chooses the customer (no login). It shows their wallet balance and whether they have an active order, and the choice is remembered across reloads.
 
-**Design:** one token-based design system (`web/src/theme.css`) following [docs/design/style_guide.md](docs/design/style_guide.md): warm orange brand, Inter, WCAG-AA text contrast, and a burger drawer on phones.
+**Design: "Kitchen Ticket".** Every screen is a piece of restaurant paper: an order prints as a kitchen order ticket stamped PAID or VOID, the wallet is a passbook, analytics is the day's board, drivers are dispatch slips, and the menu is a printed menu card. Paper-and-ink palette with kitchen status colours (WCAG AA, checked by `npm run check:contrast` in `web/`), Fraunces / Inter / JetBrains Mono, purposeful motion that respects reduced-motion settings, and a burger drawer on phones. See [docs/design/style_guide.md](docs/design/style_guide.md).
 
-![Place order: success with the trigger-written audit row](docs/screenshots/place_order_desktop.png)
+| Order placed (PAID) | Order refused (VOID) |
+|---|---|
+| ![Place order: success with the trigger-written audit row](docs/screenshots/place_order_desktop.png) | ![Place order: refused by the partial unique index](docs/screenshots/place_order_refused_desktop.png) |
 
 | Analytics | Live driver map |
 |---|---|
@@ -49,7 +51,7 @@ A web front end for the inherited **BiteStream** food-delivery backend (PostgreS
 | **Reviews & menus** | **Wallet history** |
 | ![Reviews & menus](docs/screenshots/reviews_menus_desktop.png) | ![Wallet history](docs/screenshots/wallet_history_desktop.png) |
 
-<img src="docs/screenshots/browse_mobile.png" alt="Browse on a phone" width="220"> <img src="docs/screenshots/analytics_mobile.png" alt="Analytics on a phone" width="220"> <img src="docs/screenshots/nav_drawer_mobile.png" alt="Navigation drawer on a phone" width="220">
+<img src="docs/screenshots/browse_mobile.png" alt="Browse on a phone" width="220"> <img src="docs/screenshots/analytics_mobile.png" alt="Analytics on a phone" width="220"> <img src="docs/screenshots/nav_drawer_mobile.png" alt="Navigation drawer on a phone" width="220"> <img src="docs/screenshots/reviews_mobile.png" alt="Reviews and menu on a phone" width="220">
 
 ## 2. Running it
 
@@ -261,6 +263,7 @@ Every change is marked `[Team 26]` in the code. The full reasoning and evidence 
         ├── context/          # "Acting as" customer
         ├── services/api.js   # API client
         ├── theme.css         # design tokens (colours, type, spacing); theme.js mirrors colours for charts/map
+        ├── kitchen.css       # "Kitchen Ticket" concept layer: type roles, motifs, motion, signature moments
         ├── styles.css        # shell, shared components, Analytics / Map / Reviews
         ├── screens.css       # Browse, Place order, Wallet history
         └── router.js         # hash routing
@@ -272,7 +275,7 @@ Team 26. The allocation sheet lists four members; **Jyotiraditya Kumar is no lon
 
 | Member | Design | Code | Documentation |
 |---|---|---|---|
-| **Nisarg Bhojani** | Users, wireframes, Figma design system, visual QA | Design-token system (`theme.css`, `theme.js`) and restyle of all six screens (`styles.css`, `screens.css`), phone navigation drawer; UI-upgrade data fixes: per-restaurant 7-day series and stored `refreshed_at` (Analytics), one row per driver around real restaurants (Map), Mongo seeder linked to PostgreSQL restaurants and menu accordion (Reviews & menus), with 9 integration tests | Style guide, [UI upgrade spec](docs/design/2026-10-15-ui-upgrade-design.md) and [plan](docs/design/2026-10-15-ui-upgrade-plan.md), screenshots, demo video |
+| **Nisarg Bhojani** | Users, wireframes, Figma design system, visual QA | "Kitchen Ticket" design system: tokens (`theme.css`, `theme.js`), concept layer (`kitchen.css`), `CountUp`, contrast checker, restyle of all six screens, phone navigation drawer; fixed the Advance button placing an unwanted order; UI-upgrade data fixes: per-restaurant 7-day series and stored `refreshed_at` (Analytics), one row per driver around real restaurants (Map), Mongo seeder linked to PostgreSQL restaurants and menu accordion (Reviews & menus), with 9 integration tests | Style guide, [UI upgrade spec](docs/design/2026-10-15-ui-upgrade-design.md) and [plan](docs/design/2026-10-15-ui-upgrade-plan.md), screenshots, demo video |
 | **Kodavali Sai** | `TODO` | API + screens: Analytics, Live driver map, Reviews & menus | `TODO` |
 | **Mohit Tripathi** | Wireframes for Browse / Place order / Wallet | Inherited-DB fixes (checkout procedure, status procedure, indexes, seeder), API + screens: Browse, Place order, Wallet history, "Acting as" picker, tests | Handover note, API endpoints, README |
 | Jyotiraditya Kumar | – | – | – (left the college) |

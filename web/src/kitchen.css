@@ -314,6 +314,15 @@ td { border-bottom-color: var(--border); }
 
 @media (max-width: 767px) {
   .date-stamp { display: none; }
+  /* Board figures shrink with the screen instead of breaking mid-number. */
+  .board .stat-value { font-size: clamp(20px, 6.2vw, 28px); white-space: nowrap; overflow-wrap: normal; }
+  /* Top bar on phones: one line each for title and actor; the active-order
+     note becomes a dot so the picker never grows taller than the bar. */
+  .breadcrumbs { min-width: 0; overflow: hidden; }
+  .breadcrumbs strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .actor-button .profile-copy span { white-space: nowrap; }
+  .actor-button .active-dot { font-size: 0; }
+  .actor-button .active-dot::after { content: '●'; font-size: 10px; margin-left: 6px; color: var(--warning); }
   .page-title-row h1 { font-size: 26px; }
   .stat-value { font-size: 24px; }
   .stamp.big { font-size: 17px; top: 14px; right: 14px; }
