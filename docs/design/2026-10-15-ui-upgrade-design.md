@@ -99,7 +99,7 @@ Status text on soft backgrounds uses darker shades of the same hue, so every bad
 - **Endpoint.** `GET /api/map/nearby?lat=&lng=&radiusKm=5` runs this pipeline:
   - `$geoNear` (5,000 m, `active: true`)
   - `$sort { driver_id: 1, created_at: -1 }`
-  - `$group` by `driver_id`, keeping the latest ping and the minimum distance
+  - `$group` by `driver_id`, keeping the latest ping and that ping's distance (so the marker and the listed distance agree)
   - `$sort { distanceMeters: 1 }`
   - `$limit 20`
 - `mongo/02_workflow3_geonear.js` gets the same pipeline (a documented change to the inherited script).
