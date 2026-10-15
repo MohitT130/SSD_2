@@ -15,26 +15,28 @@ const sections = [
   ] },
 ];
 
-export default function Sidebar({ page, setPage, collapsed, setCollapsed, apiStatus }) {
+export default function Sidebar({ page, setPage, collapsed, setCollapsed, apiStatus, mobileOpen = false }) {
   const statusText = apiStatus === 'ok' ? 'API connected' : apiStatus === 'down' ? 'API unreachable' : 'Checking API…';
+  // On phones the sidebar is a drawer, so it always shows labels.
+  const showLabels = !collapsed || mobileOpen;
 
   return (
-    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-      <div className="brand"><div className="brand-mark"><Utensils size={20} /></div>{!collapsed && <div><strong>BiteStream</strong><span>OPS CONSOLE</span></div>}</div>
+    <aside className={`sidebar ${collapsed && !mobileOpen ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+      <div className="brand"><div className="brand-mark"><Utensils size={19} /></div>{showLabels && <div><strong>BiteStream</strong><span>Food delivery console</span></div>}</div>
       {sections.map(({ caption, items }) => (
         <div key={caption} className="nav-section">
           <div className="nav-caption">{caption}</div>
           <nav>
             {items.map(({ id, label, icon: Icon }) => (
               <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => setPage(id)} title={label} aria-current={page === id ? 'page' : undefined}>
-                <Icon size={18} />{!collapsed && <span>{label}</span>}{page === id && !collapsed && <span className="nav-dot" />}
+                <Icon size={18} />{showLabels && <span>{label}</span>}{page === id && showLabels && <span className="nav-dot" />}
               </button>
             ))}
           </nav>
         </div>
       ))}
       <div className="sidebar-bottom">
-        <div className={`status-pill ${apiStatus === 'down' ? 'down' : ''}`} title={statusText}><span className="status-dot" />{!collapsed && statusText}</div>
+        <div className={`status-pill ${apiStatus === 'down' ? 'down' : ''}`} title={statusText}><span className="status-dot" />{showLabels && statusText}</div>
         <button className="collapse-button" onClick={() => setCollapsed(!collapsed)} aria-label="Toggle sidebar">{collapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}</button>
       </div>
     </aside>
