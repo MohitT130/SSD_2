@@ -104,7 +104,7 @@ export default function WalletHistory({ params }) {
 
       <Panel title="Entries" subtitle="Newest first · running balance from SUM(...) OVER (ORDER BY timestamp)">
         <div className="table-wrap">
-          <table className="data-table">
+          <table className="data-table ledger">
             <thead>
               <tr>
                 <th>Time</th><th>Action</th><th className="num">Amount</th>

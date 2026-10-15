@@ -23,8 +23,9 @@ body {
   font-family: var(--serif);
   font-size: var(--fs-title);
   font-weight: 600;
-  letter-spacing: -.8px;
-  font-variation-settings: 'opsz' 96;
+  letter-spacing: -.2px;
+  word-spacing: .06em;
+  font-variation-settings: 'opsz' 60;
   line-height: 1.1;
 }
 .eyebrow {
@@ -155,6 +156,54 @@ td { border-bottom-color: var(--border); }
 
 .print { animation: print .55s var(--ease-out) both; }
 .print .stamp.big { animation: stamp-land .32s var(--ease-stamp) .45s both; }
+
+/* ---- 6. Browse: the ticket rail ------------------------------------------- */
+/* Statuses and wallet actions are stamped, not badged. */
+.status-badge, .action-badge {
+  background: transparent !important;
+  border: 1.5px solid currentColor; border-radius: 4px;
+  padding: 1px 8px; font-family: var(--mono); font-size: var(--fs-caption);
+  font-weight: 600; letter-spacing: .08em;
+}
+.status-badge::before { display: none; }
+.tabs { background: var(--hover); border: 1px solid var(--border); }
+.tab.active { background: var(--surface); box-shadow: 0 1px 2px rgba(34, 28, 23, .12); }
+.data-table.clickable tbody tr, .clickable-rows tbody tr { transition: transform .18s var(--ease-out), box-shadow .18s var(--ease-out); }
+.data-table.clickable tbody tr:hover, .clickable-rows tbody tr:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lift);
+}
+.data-table.clickable tbody tr:hover td, .clickable-rows tbody tr:hover td { background: var(--surface); }
+.money-cell { font-variant-numeric: tabular-nums; }
+.drawer { background: var(--surface); }
+.drawer-header h2 { font-family: var(--serif); font-size: 22px; font-weight: 600; letter-spacing: -.4px; }
+.detail-list > div { border-bottom: 1px dashed var(--border-strong); }
+
+/* ---- 7. Place order: the kitchen order ticket ---------------------------- */
+.chip { font-family: var(--mono); font-size: var(--fs-caption); }
+.readonly-field { background: var(--page); border-style: dashed; }
+.warning-box { border-style: dashed; }
+.result-panel { position: relative; }
+.result-panel.success, .result-panel.failure {
+  --notch-y: 82px;
+  background: var(--surface);
+  border-color: var(--border-strong);
+}
+.result-panel.success .panel-heading, .result-panel.failure .panel-heading { padding-right: 120px; }
+.result-heading { font-family: var(--serif); font-size: 20px; font-weight: 600; letter-spacing: -.3px; }
+.ticket-amount { font-size: 24px; font-weight: 600; color: var(--text); }
+.result-panel .highlight-row td { background: var(--success-soft); }
+.result-panel .subsection { padding-top: 16px; border-top: 1px dashed var(--border-strong); }
+.result-panel .drawer-actions { padding-top: 16px; border-top: 1px dashed var(--border-strong); }
+
+/* ---- 8. Wallet history: the passbook ------------------------------------- */
+.ledger thead th { border-bottom: 2px solid var(--text); color: var(--text); }
+.ledger td:first-child { font-family: var(--mono); font-size: var(--fs-caption); color: var(--text-muted); }
+.ledger .money-cell { font-family: var(--serif); font-size: 15px; font-weight: 600; font-variation-settings: 'opsz' 24; }
+.ledger tbody tr:nth-child(even) td { background: rgba(241, 232, 217, .45); }
+/* The red double margin rule of a passbook, before the amount columns. */
+.ledger th:nth-child(3), .ledger td:nth-child(3) { border-left: 3px double rgba(178, 58, 18, .35); }
+.ledger th:last-child, .ledger td:last-child { border-left: 1px dashed var(--border-strong); }
 
 /* ---- Reduced motion: every animation lands on its final frame. ----------- */
 @media (prefers-reduced-motion: reduce) {
